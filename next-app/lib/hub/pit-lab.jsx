@@ -279,10 +279,45 @@ export function PitLabPage({ season, isMobile = false }) {
                 <div key={c} style={{ background: "#0c0c0c", border: "1px solid #1a1a1a", borderRadius: 8, padding: 10, fontSize: 12, color: "#999" }}>
                   <div style={{ color: compoundColor(c), fontWeight: 700, marginBottom: 4 }}>{c}</div>
                   <div>Wear +{ready.model.slopeByCompound[c].toFixed(3)} s per tyre-lap</div>
+                  <div style={{ color: "#666", fontSize: 11 }}>{wearSourceLabel(ready, c)}</div>
+                  <div style={{ fontSize: 11, color: ready.circuitWear?.[c] ? "#27F4D2" : "#555", marginTop: 4 }}>
+                    {circuitWearLabel(ready, c)}
+                  </div>
                   <div>Pace {ready.model.offsetByCompound[c] >= 0 ? "+" : ""}{ready.model.offsetByCompound[c].toFixed(2)} s vs the field</div>
                   <div>{ready.model.samplesByCompound[c]} clean laps used</div>
                 </div>
               ))}
+            </div>
+            <div style={{ marginTop: 14 }}>
+              <div style={{ fontSize: 10, color: "#666", textTransform: "uppercase", letterSpacing: 1.5, marginBottom: 6 }}>Published wear at this circuit</div>
+              {Object.keys(ready.circuitWear ?? {}).length === 0 ? (
+                <div style={{ fontSize: 12, color: "#666" }}>No compound here has three races of history yet.</div>
+              ) : (
+                <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 12, ...mono }}>
+                  <thead>
+                    <tr style={{ color: "#555", textAlign: "left" }}>
+                      <th style={{ padding: "6px 8px", fontWeight: 400 }}>Compound</th>
+                      <th style={{ padding: "6px 8px", fontWeight: 400, textAlign: "right" }}>Median s per tyre-lap</th>
+                      <th style={{ padding: "6px 8px", fontWeight: 400, textAlign: "right" }}>Range</th>
+                      <th style={{ padding: "6px 8px", fontWeight: 400, textAlign: "right" }}>Races</th>
+                      <th style={{ padding: "6px 8px", fontWeight: 400, textAlign: "right" }}>In this race</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {Object.entries(ready.circuitWear).map(([c, w]) => (
+                      <tr key={c} style={{ borderTop: "1px solid #161616", color: "#ccc" }}>
+                        <td style={{ padding: "6px 8px", color: compoundColor(c), fontWeight: 700 }}>{c}</td>
+                        <td style={{ padding: "6px 8px", textAlign: "right" }}>{w.slopeSecPerLap.toFixed(3)}</td>
+                        <td style={{ padding: "6px 8px", textAlign: "right" }}>{w.slopeRange[0].toFixed(3)} to {w.slopeRange[1].toFixed(3)}</td>
+                        <td style={{ padding: "6px 8px", textAlign: "right" }}>{w.races}</td>
+                        <td style={{ padding: "6px 8px", textAlign: "right", color: ready.model.samplesByCompound[c] ? "#27F4D2" : "#555" }}>
+                          {ready.model.samplesByCompound[c] ? "yes" : "no"}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              )}
             </div>
             <div style={{ fontSize: 11, color: "#555", marginTop: 10 }}>
               Wear is the slope of lap time against tyre age, so a compound that barely degrades can make a late stop look cheap. Check the clean-lap count before trusting a small difference.
@@ -298,6 +333,25 @@ export function PitLabPage({ season, isMobile = false }) {
       )}
     </div>
   );
+}
+
+/** The circuit's published wear for a compound, across every race held there since 2023. */
+function circuitWearLabel(ready, compound) {
+  const wear = ready.circuitWear?.[compound];
+  if (!wear) return "Circuit: not enough races yet (a compound needs three races at the circuit)";
+  return `Circuit: +${wear.slopeSecPerLap.toFixed(3)} s per tyre-lap, ${wear.races} races, range ${wear.slopeRange[0].toFixed(3)} to ${wear.slopeRange[1].toFixed(3)}`;
+}
+
+/** Where a compound's wear rate came from: this race, the circuit's history, or a fixed default. */
+function wearSourceLabel(ready, compound) {
+  const source = ready.slopeSource?.[compound];
+  if (source === "circuit") {
+    const range = ready.circuitWear?.[compound]?.slopeRange;
+    const races = ready.circuitWear?.[compound]?.races;
+    return `Too few clean laps here, so circuit history: ${races} races${range ? `, ${range[0].toFixed(3)} to ${range[1].toFixed(3)}` : ""}`;
+  }
+  if (source === "default") return "Too few clean laps, and no circuit history yet: default rate";
+  return "Fitted from this race";
 }
 
 function formatLap(seconds) {

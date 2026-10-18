@@ -111,6 +111,78 @@ function RecapCard({ season, round }) {
   );
 }
 
+const pct = (p) => `${Math.round(p * 100)}%`;
+
+/** Podium chances from the grid and recent form, with the model's track record beside them. */
+function PodiumModelCard({ season, round }) {
+  const [state, setState] = useState({ status: "loading", data: null });
+
+  useEffect(() => {
+    let active = true;
+    setState({ status: "loading", data: null });
+    apiFetch(`/api/race-model?season=${encodeURIComponent(season)}&round=${encodeURIComponent(round)}`, 60 * 60 * 1000)
+      .then((data) => { if (active) setState({ status: "ready", data }); })
+      .catch((err) => { if (active) setState({ status: "error", data: null, error: err.message }); });
+    return () => { active = false; };
+  }, [season, round]);
+
+  if (state.status === "loading") return null;
+  if (state.status === "error") return null;
+  const { data } = state;
+  const ev = data.evaluation;
+  const th = { textAlign: "right", padding: "8px 10px", fontSize: 10, color: "#555", fontWeight: 700, textTransform: "uppercase", letterSpacing: 1 };
+  const td = { padding: "9px 10px", fontSize: 12, borderTop: "1px solid #161616" };
+
+  return (
+    <div style={{ background: "#0b0b0b", border: "1px solid #1a1a1a", borderRadius: 12, padding: 18 }}>
+      <SecLabel>Podium model</SecLabel>
+      <div style={{ fontSize: 12, color: "#888", lineHeight: 1.6 }}>
+        Chance of a podium from the grid slot alone, using a logistic regression trained on races before the season being scored.
+        Recent form and team points are shown for context. They did not beat grid position on the latest season. {data.sample.note}
+      </div>
+      <div style={{ fontSize: 12, color: "#bbb", marginTop: 10, ...mono }}>
+        Brier score, lower is better. {ev.testSeason} out of sample: grid only {ev.brier.gridOnly.toFixed(3)} · with form and team {ev.brier.withFormAndTeam.toFixed(3)} · base rate {ev.brier.baseRate.toFixed(3)}
+      </div>
+      {data.latestSeasonCheck && (
+        <div style={{ fontSize: 12, color: "#bbb", marginTop: 4, ...mono }}>
+          {data.latestSeasonCheck.season} so far, {data.latestSeasonCheck.races} races out of sample: grid only {data.latestSeasonCheck.brier.gridOnly.toFixed(3)} · with form and team {data.latestSeasonCheck.brier.withFormAndTeam.toFixed(3)}
+        </div>
+      )}
+      <div style={{ overflowX: "auto", marginTop: 12 }}>
+        <table style={{ width: "100%", borderCollapse: "collapse", minWidth: 560 }}>
+          <thead>
+            <tr>
+              <th style={{ ...th, textAlign: "left" }}>Driver</th>
+              <th style={th}>Grid</th>
+              <th style={th}>Form</th>
+              <th style={th}>Team pts</th>
+              <th style={th}>Podium chance (grid)</th>
+              <th style={th}>Result</th>
+            </tr>
+          </thead>
+          <tbody>
+            {data.drivers.slice(0, 10).map((d) => (
+              <tr key={d.driverId}>
+                <td style={{ ...td, color: "#fff", fontWeight: 600 }}>{d.code || d.name}</td>
+                <td style={{ ...td, textAlign: "right", ...mono, color: "#aaa" }}>{d.grid}</td>
+                <td style={{ ...td, textAlign: "right", ...mono, color: "#aaa" }}>{d.formAvg.toFixed(1)}</td>
+                <td style={{ ...td, textAlign: "right", ...mono, color: "#aaa" }}>{d.teamForm.toFixed(1)}</td>
+                <td style={{ ...td, textAlign: "right", ...mono, color: "#27F4D2", fontWeight: 700 }}>{pct(d.probability)}</td>
+                <td style={{ ...td, textAlign: "right", ...mono, color: d.podium ? "#FFD700" : "#666", fontWeight: d.podium ? 700 : 400 }}>
+                  {d.finish === null ? "DNF" : `P${d.finish}`}{d.podium ? " ★" : ""}
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+      <div style={{ fontSize: 11, color: "#555", marginTop: 10, lineHeight: 1.6 }}>
+        The chance uses the grid slot only. Form and team columns are context; on the latest season they added error rather than accuracy.
+      </div>
+    </div>
+  );
+}
+
 export function RaceStoryPage({ season, isMobile = false }) {
   const [races, setRaces] = useState(null);
   const [round, setRound] = useState("");
@@ -199,6 +271,7 @@ export function RaceStoryPage({ season, isMobile = false }) {
       {data && (
         <>
           <RecapCard season={season} round={round} />
+          <PodiumModelCard season={season} round={round} />
 
           <div style={{ background: "#0b0b0b", border: "1px solid #1a1a1a", borderRadius: 12, padding: 18 }}>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 12, flexWrap: "wrap" }}>

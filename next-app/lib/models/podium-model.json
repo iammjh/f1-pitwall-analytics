@@ -1,0 +1,67 @@
+{
+  "version": 2,
+  "generatedAt": "2026-10-18T17:38:08.263Z",
+  "trainedThrough": {
+    "season": 2026,
+    "round": 17
+  },
+  "features": [
+    "grid"
+  ],
+  "model": {
+    "intercept": -3.9145721481957896,
+    "weights": [
+      -3.0106657456538257
+    ],
+    "means": [
+      10.722942142726774
+    ],
+    "scales": [
+      5.918553893657308
+    ]
+  },
+  "holdoutModel": {
+    "intercept": -3.845239969904389,
+    "weights": [
+      -2.952263215090724
+    ],
+    "means": [
+      10.685257241677474
+    ],
+    "scales": [
+      5.894697334681929
+    ]
+  },
+  "evaluation": {
+    "trainSeasons": "2014-2024",
+    "testSeason": 2025,
+    "testRows": 479,
+    "baseRate": 0.14785992217898833,
+    "brier": {
+      "gridOnly": 0.06149084080058134,
+      "withFormAndTeam": 0.06072193411318887,
+      "baseRate": 0.12772512695467914
+    },
+    "logLoss": {
+      "gridOnly": 0.22896133768377158,
+      "withFormAndTeam": 0.20933077000155315,
+      "baseRate": 0.42327567250353415
+    }
+  },
+  "latestSeasonCheck": {
+    "season": 2026,
+    "races": 17,
+    "testRows": 374,
+    "baseRate": 0.14809010773751224,
+    "brier": {
+      "gridOnly": 0.06325182043000521,
+      "withFormAndTeam": 0.06897000928812701,
+      "baseRate": 0.1179061051722049
+    },
+    "logLoss": {
+      "gridOnly": 0.210008183465242,
+      "withFormAndTeam": 0.2139514979248396,
+      "baseRate": 0.39886449569450805
+    }
+  }
+}

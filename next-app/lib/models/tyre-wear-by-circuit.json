@@ -1,0 +1,582 @@
+{
+  "version": 1,
+  "generatedAt": "2026-10-18T16:01:30.602Z",
+  "seasons": [
+    2023,
+    2024,
+    2025,
+    2026
+  ],
+  "minRaces": 3,
+  "circuits": {
+    "2": {
+      "circuitName": "Silverstone",
+      "compounds": {
+        "MEDIUM": {
+          "slopeSecPerLap": 0.011,
+          "slopeRange": [
+            0,
+            0.117
+          ],
+          "races": 4,
+          "fits": 54
+        },
+        "SOFT": {
+          "slopeSecPerLap": 0.029,
+          "slopeRange": [
+            0,
+            0.128
+          ],
+          "races": 4,
+          "fits": 26
+        },
+        "HARD": {
+          "slopeSecPerLap": 0.035,
+          "slopeRange": [
+            0,
+            0.073
+          ],
+          "races": 4,
+          "fits": 28
+        }
+      }
+    },
+    "4": {
+      "circuitName": "Hungaroring",
+      "compounds": {
+        "MEDIUM": {
+          "slopeSecPerLap": 0.03,
+          "slopeRange": [
+            0.009,
+            0.052
+          ],
+          "races": 4,
+          "fits": 64
+        },
+        "HARD": {
+          "slopeSecPerLap": 0.052,
+          "slopeRange": [
+            0.034,
+            0.071
+          ],
+          "races": 4,
+          "fits": 73
+        },
+        "SOFT": {
+          "slopeSecPerLap": 0,
+          "slopeRange": [
+            0,
+            0.044
+          ],
+          "races": 4,
+          "fits": 17
+        }
+      }
+    },
+    "7": {
+      "circuitName": "Spa-Francorchamps",
+      "compounds": {
+        "MEDIUM": {
+          "slopeSecPerLap": 0.04,
+          "slopeRange": [
+            0,
+            0.121
+          ],
+          "races": 4,
+          "fits": 61
+        },
+        "HARD": {
+          "slopeSecPerLap": 0.018,
+          "slopeRange": [
+            0,
+            0.295
+          ],
+          "races": 4,
+          "fits": 43
+        }
+      }
+    },
+    "9": {
+      "circuitName": "Austin",
+      "compounds": {
+        "MEDIUM": {
+          "slopeSecPerLap": 0.02,
+          "slopeRange": [
+            0,
+            0.023
+          ],
+          "races": 3,
+          "fits": 53
+        },
+        "HARD": {
+          "slopeSecPerLap": 0,
+          "slopeRange": [
+            0,
+            0.039
+          ],
+          "races": 3,
+          "fits": 38
+        }
+      }
+    },
+    "10": {
+      "circuitName": "Melbourne",
+      "compounds": {
+        "HARD": {
+          "slopeSecPerLap": 0.029,
+          "slopeRange": [
+            0,
+            0.033
+          ],
+          "races": 3,
+          "fits": 51
+        },
+        "MEDIUM": {
+          "slopeSecPerLap": 0.011,
+          "slopeRange": [
+            0,
+            0.046
+          ],
+          "races": 4,
+          "fits": 18
+        }
+      }
+    },
+    "15": {
+      "circuitName": "Catalunya",
+      "compounds": {
+        "MEDIUM": {
+          "slopeSecPerLap": 0.046,
+          "slopeRange": [
+            0.04,
+            0.185
+          ],
+          "races": 4,
+          "fits": 67
+        },
+        "HARD": {
+          "slopeSecPerLap": 0.049,
+          "slopeRange": [
+            0.042,
+            0.099
+          ],
+          "races": 3,
+          "fits": 49
+        },
+        "SOFT": {
+          "slopeSecPerLap": 0.079,
+          "slopeRange": [
+            0.04,
+            0.219
+          ],
+          "races": 4,
+          "fits": 58
+        }
+      }
+    },
+    "19": {
+      "circuitName": "Spielberg",
+      "compounds": {
+        "HARD": {
+          "slopeSecPerLap": 0.061,
+          "slopeRange": [
+            0.049,
+            0.072
+          ],
+          "races": 4,
+          "fits": 71
+        },
+        "MEDIUM": {
+          "slopeSecPerLap": 0.074,
+          "slopeRange": [
+            0.048,
+            0.085
+          ],
+          "races": 4,
+          "fits": 69
+        }
+      }
+    },
+    "22": {
+      "circuitName": "Monte Carlo",
+      "compounds": {
+        "HARD": {
+          "slopeSecPerLap": 0.004,
+          "slopeRange": [
+            0,
+            0.02
+          ],
+          "races": 4,
+          "fits": 56
+        },
+        "MEDIUM": {
+          "slopeSecPerLap": 0.01,
+          "slopeRange": [
+            0,
+            0.042
+          ],
+          "races": 4,
+          "fits": 48
+        },
+        "SOFT": {
+          "slopeSecPerLap": 0.033,
+          "slopeRange": [
+            0,
+            0.18
+          ],
+          "races": 4,
+          "fits": 7
+        }
+      }
+    },
+    "23": {
+      "circuitName": "Montreal",
+      "compounds": {
+        "HARD": {
+          "slopeSecPerLap": 0.004,
+          "slopeRange": [
+            0,
+            0.02
+          ],
+          "races": 4,
+          "fits": 45
+        },
+        "MEDIUM": {
+          "slopeSecPerLap": 0.008,
+          "slopeRange": [
+            0,
+            0.049
+          ],
+          "races": 4,
+          "fits": 52
+        }
+      }
+    },
+    "39": {
+      "circuitName": "Monza",
+      "compounds": {
+        "HARD": {
+          "slopeSecPerLap": 0.013,
+          "slopeRange": [
+            0,
+            0.06
+          ],
+          "races": 4,
+          "fits": 67
+        },
+        "MEDIUM": {
+          "slopeSecPerLap": 0.006,
+          "slopeRange": [
+            0,
+            0.062
+          ],
+          "races": 4,
+          "fits": 60
+        }
+      }
+    },
+    "46": {
+      "circuitName": "Suzuka",
+      "compounds": {
+        "HARD": {
+          "slopeSecPerLap": 0.03,
+          "slopeRange": [
+            0,
+            0.094
+          ],
+          "races": 4,
+          "fits": 69
+        },
+        "MEDIUM": {
+          "slopeSecPerLap": 0.043,
+          "slopeRange": [
+            0.005,
+            0.086
+          ],
+          "races": 4,
+          "fits": 62
+        },
+        "SOFT": {
+          "slopeSecPerLap": 0.035,
+          "slopeRange": [
+            0,
+            0.083
+          ],
+          "races": 3,
+          "fits": 6
+        }
+      }
+    },
+    "49": {
+      "circuitName": "Shanghai",
+      "compounds": {
+        "HARD": {
+          "slopeSecPerLap": 0,
+          "slopeRange": [
+            0,
+            0.038
+          ],
+          "races": 3,
+          "fits": 52
+        },
+        "MEDIUM": {
+          "slopeSecPerLap": 0.124,
+          "slopeRange": [
+            0.069,
+            0.124
+          ],
+          "races": 3,
+          "fits": 34
+        }
+      }
+    },
+    "55": {
+      "circuitName": "Zandvoort",
+      "compounds": {
+        "SOFT": {
+          "slopeSecPerLap": 0.033,
+          "slopeRange": [
+            0.01,
+            0.045
+          ],
+          "races": 4,
+          "fits": 47
+        },
+        "MEDIUM": {
+          "slopeSecPerLap": 0.031,
+          "slopeRange": [
+            0.004,
+            0.085
+          ],
+          "races": 4,
+          "fits": 53
+        },
+        "HARD": {
+          "slopeSecPerLap": 0.031,
+          "slopeRange": [
+            0,
+            0.035
+          ],
+          "races": 4,
+          "fits": 56
+        }
+      }
+    },
+    "61": {
+      "circuitName": "Singapore",
+      "compounds": {
+        "MEDIUM": {
+          "slopeSecPerLap": 0.013,
+          "slopeRange": [
+            0,
+            0.044
+          ],
+          "races": 4,
+          "fits": 70
+        },
+        "HARD": {
+          "slopeSecPerLap": 0.045,
+          "slopeRange": [
+            0.005,
+            0.05
+          ],
+          "races": 3,
+          "fits": 48
+        },
+        "SOFT": {
+          "slopeSecPerLap": 0.019,
+          "slopeRange": [
+            0,
+            0.049
+          ],
+          "races": 4,
+          "fits": 35
+        }
+      }
+    },
+    "63": {
+      "circuitName": "Sakhir",
+      "compounds": {
+        "SOFT": {
+          "slopeSecPerLap": 0.083,
+          "slopeRange": [
+            0.07,
+            0.083
+          ],
+          "races": 3,
+          "fits": 41
+        },
+        "HARD": {
+          "slopeSecPerLap": 0.065,
+          "slopeRange": [
+            0.055,
+            0.106
+          ],
+          "races": 3,
+          "fits": 51
+        }
+      }
+    },
+    "65": {
+      "circuitName": "Mexico City",
+      "compounds": {
+        "MEDIUM": {
+          "slopeSecPerLap": 0.037,
+          "slopeRange": [
+            0.036,
+            0.056
+          ],
+          "races": 3,
+          "fits": 51
+        },
+        "HARD": {
+          "slopeSecPerLap": 0.017,
+          "slopeRange": [
+            0.011,
+            0.032
+          ],
+          "races": 3,
+          "fits": 32
+        }
+      }
+    },
+    "70": {
+      "circuitName": "Yas Marina Circuit",
+      "compounds": {
+        "HARD": {
+          "slopeSecPerLap": 0.028,
+          "slopeRange": [
+            0.02,
+            0.03
+          ],
+          "races": 3,
+          "fits": 59
+        },
+        "MEDIUM": {
+          "slopeSecPerLap": 0.049,
+          "slopeRange": [
+            0.04,
+            0.056
+          ],
+          "races": 3,
+          "fits": 47
+        }
+      }
+    },
+    "144": {
+      "circuitName": "Baku",
+      "compounds": {
+        "HARD": {
+          "slopeSecPerLap": 0,
+          "slopeRange": [
+            0,
+            0
+          ],
+          "races": 3,
+          "fits": 57
+        },
+        "MEDIUM": {
+          "slopeSecPerLap": 0,
+          "slopeRange": [
+            0,
+            0.001
+          ],
+          "races": 4,
+          "fits": 48
+        }
+      }
+    },
+    "149": {
+      "circuitName": "Jeddah",
+      "compounds": {
+        "MEDIUM": {
+          "slopeSecPerLap": 0,
+          "slopeRange": [
+            0,
+            0.027
+          ],
+          "races": 3,
+          "fits": 34
+        },
+        "HARD": {
+          "slopeSecPerLap": 0,
+          "slopeRange": [
+            0,
+            0
+          ],
+          "races": 3,
+          "fits": 49
+        }
+      }
+    },
+    "150": {
+      "circuitName": "Lusail",
+      "compounds": {
+        "MEDIUM": {
+          "slopeSecPerLap": 0,
+          "slopeRange": [
+            0,
+            0.036
+          ],
+          "races": 3,
+          "fits": 53
+        },
+        "HARD": {
+          "slopeSecPerLap": 0,
+          "slopeRange": [
+            0,
+            0.003
+          ],
+          "races": 3,
+          "fits": 42
+        }
+      }
+    },
+    "151": {
+      "circuitName": "Miami",
+      "compounds": {
+        "HARD": {
+          "slopeSecPerLap": 0.009,
+          "slopeRange": [
+            0,
+            0.043
+          ],
+          "races": 4,
+          "fits": 63
+        },
+        "MEDIUM": {
+          "slopeSecPerLap": 0.01,
+          "slopeRange": [
+            0,
+            0.041
+          ],
+          "races": 4,
+          "fits": 57
+        }
+      }
+    },
+    "152": {
+      "circuitName": "Las Vegas",
+      "compounds": {
+        "MEDIUM": {
+          "slopeSecPerLap": 0,
+          "slopeRange": [
+            0,
+            0.08
+          ],
+          "races": 3,
+          "fits": 26
+        },
+        "HARD": {
+          "slopeSecPerLap": 0,
+          "slopeRange": [
+            0,
+            0
+          ],
+          "races": 3,
+          "fits": 56
+        }
+      }
+    }
+  }
+}

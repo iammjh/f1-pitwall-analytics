@@ -10,6 +10,8 @@ import {
   type Stint,
 } from '@/lib/pit-strategy';
 import { createTtlCache, enforcePublicRateLimit, publicCacheHeaders } from '@/lib/public-api';
+import tyreWear from '@/lib/models/tyre-wear-by-circuit.json';
+import type { CompoundWear } from '@/lib/tyre-wear';
 
 export const dynamic = 'force-dynamic';
 
@@ -85,6 +87,22 @@ export async function GET(req: NextRequest) {
     }
 
     const fitted = fitTyreModel(laps, stints);
+    // A compound with too few clean laps in this race gets the wear rate measured at this circuit, when there is one.
+    const circuitKey = String((session as OpenF1Session & { circuit_key?: number }).circuit_key ?? '');
+    const circuitCompounds: Record<string, CompoundWear> =
+      (tyreWear.circuits as unknown as Record<string, { compounds: Record<string, CompoundWear> }>)[circuitKey]?.compounds ?? {};
+    const slopeSource: Record<string, 'race' | 'circuit' | 'default'> = {};
+    for (const compound of Object.keys(fitted.samplesByCompound)) {
+      // fitTyreModel only fits a slope from five clean laps; below that it falls back to a fixed default.
+      if (fitted.samplesByCompound[compound] >= 5) {
+        slopeSource[compound] = 'race';
+      } else if (circuitCompounds[compound]) {
+        fitted.slopeByCompound[compound] = circuitCompounds[compound].slopeSecPerLap;
+        slopeSource[compound] = 'circuit';
+      } else {
+        slopeSource[compound] = 'default';
+      }
+    }
     const actualStops = stopsFromStints(stints);
     // Compare like with like: only laps that have a recorded time (lap 1 and retirements often do not).
     const timed = new Set(laps.filter((l) => l.durationSec !== null).map((l) => l.lap));
@@ -116,6 +134,8 @@ export async function GET(req: NextRequest) {
       modelledTotalSec: Math.round(modelledTimedSec * 1000) / 1000,
       calibrationShiftSec,
       lowConfidenceCompounds: lowConfidence,
+      slopeSource,
+      circuitWear: circuitCompounds,
     };
     labCache.set(key, payload);
     return NextResponse.json(payload, { headers: publicCacheHeaders(CACHE_MS / 1000) });
