@@ -1,0 +1,41 @@
+# Scheduled jobs for the app. Vercel's Hobby plan only allows daily cron jobs, so they run here instead.
+# Needs two settings in the repository:
+#   secret CRON_SECRET  (the same value as on Vercel)
+#   variable APP_URL    (the production address, for example https://your-domain.example)
+name: Scheduled jobs
+
+on:
+  schedule:
+    - cron: '*/5 * * * *'   # password-reset delivery
+    - cron: '*/15 * * * *'  # race-start alerts
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  password-reset-delivery:
+    if: github.event_name == 'workflow_dispatch' || github.event.schedule == '*/5 * * * *'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Deliver queued password resets
+        env:
+          APP_URL: ${{ vars.APP_URL }}
+          CRON_SECRET: ${{ secrets.CRON_SECRET }}
+        run: |
+          curl --fail --silent --show-error --max-time 120 \
+            -H "Authorization: Bearer ${CRON_SECRET}" \
+            "${APP_URL}/api/auth/password-reset/deliver"
+
+  race-alerts:
+    if: github.event_name == 'workflow_dispatch' || github.event.schedule == '*/15 * * * *'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Send race-start alerts
+        env:
+          APP_URL: ${{ vars.APP_URL }}
+          CRON_SECRET: ${{ secrets.CRON_SECRET }}
+        run: |
+          curl --fail --silent --show-error --max-time 120 \
+            -H "Authorization: Bearer ${CRON_SECRET}" \
+            "${APP_URL}/api/notifications/race-alerts"

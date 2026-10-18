@@ -1,15 +1,5 @@
 {
   "buildCommand": "npm run build",
   "installCommand": "npm install",
-  "framework": "nextjs",
-  "crons": [
-    {
-      "path": "/api/auth/password-reset/deliver",
-      "schedule": "* * * * *"
-    },
-    {
-      "path": "/api/notifications/race-alerts",
-      "schedule": "*/15 * * * *"
-    }
-  ]
+  "framework": "nextjs"
 }
