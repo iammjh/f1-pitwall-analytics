@@ -16,9 +16,9 @@ export const metadata: Metadata = {
     title: TITLE,
     description: DESCRIPTION,
     siteName: 'Pitwall Analytics',
-    images: [{ url: '/f1_home.png', width: 1200, height: 630, alt: 'Pitwall Analytics dashboard preview' }],
+    images: [{ url: '/f1_home.png?v=2', width: 1200, height: 630, alt: 'Pitwall Analytics homepage' }],
   },
-  twitter: { card: 'summary_large_image', title: TITLE, description: DESCRIPTION, images: ['/f1_home.png'] },
+  twitter: { card: 'summary_large_image', title: TITLE, description: DESCRIPTION, images: ['/f1_home.png?v=2'] },
 };
 
 // Structured data tells search engines what the site is. The values are static, so inlining them is safe.

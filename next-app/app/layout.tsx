@@ -58,7 +58,7 @@ export const metadata: Metadata = {
     siteName: 'Pitwall Analytics',
     images: [
       {
-        url: '/f1_home.png',
+        url: '/f1_home.png?v=2',
         width: 1200,
         height: 630,
         alt: 'Pitwall Analytics Hub Dashboard Preview',
@@ -69,7 +69,7 @@ export const metadata: Metadata = {
     card: 'summary_large_image',
     title: 'Pitwall Analytics: F1 Telemetry, Standings and Race Strategy',
     description: 'Formula 1 analytics hub with championship standings, driver and constructor comparisons, race stories, race replays and pit-stop strategy.',
-    images: ['/f1_home.png'],
+    images: ['/f1_home.png?v=2'],
     creator: '@iammjh',
   },
 };
