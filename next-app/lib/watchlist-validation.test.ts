@@ -20,7 +20,7 @@ describe('validateWatchlistName', () => {
 });
 
 describe('validateWatchlistDescription', () => {
-  it('allows empty description', () => {
-    expect(validateWatchlistDescription('')).toEqual({ ok: true, value: undefined });
+  it('allows empty description and clears it to null', () => {
+    expect(validateWatchlistDescription('')).toEqual({ ok: true, value: null });
   });
 });

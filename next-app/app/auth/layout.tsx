@@ -1,18 +1,14 @@
-import { getServerSession } from 'next-auth';
-import { getAuthOptions } from '@/lib/auth-config';
-import { redirect } from 'next/navigation';
+import type { Metadata } from 'next';
 
-export default async function AuthLayout({
+export const metadata: Metadata = {
+  robots: { index: false, follow: false },
+  referrer: 'no-referrer',
+};
+
+export default function AuthLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
-  const session = await getServerSession(getAuthOptions());
-  
-  // Redirect to dashboard if already logged in
-  if (session) {
-    redirect('/dashboard');
-  }
-
   return children;
 }

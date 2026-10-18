@@ -1,11 +1,11 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { 
-  LineChart, Line, AreaChart, Area, BarChart, Bar, XAxis, YAxis, CartesianGrid, 
-  Tooltip, Legend, ResponsiveContainer, ComposedChart 
+import {
+  LineChart, Line, BarChart, Bar, XAxis, YAxis, CartesianGrid,
+  Tooltip, ResponsiveContainer, ComposedChart
 } from 'recharts';
-import type { TelemetryPayload, TelemetrySample } from '@/lib/live-telemetry';
+import { getTelemetryPresentation, type TelemetryPayload, type TelemetrySample } from '@/lib/live-telemetry';
 
 const POLL_MS = 45_000;
 
@@ -33,7 +33,8 @@ export default function TelemetryPage() {
           cache: 'no-store',
         });
         if (!response.ok) {
-          throw new Error(`Failed to load telemetry (${response.status})`);
+          const problem = await response.json().catch(() => ({}));
+          throw new Error(problem.error || `Failed to load telemetry (${response.status})`);
         }
 
         const nextPayload = (await response.json()) as TelemetryPayload;
@@ -84,6 +85,10 @@ export default function TelemetryPage() {
     );
   }
 
+  const { speedLabel, speedChartTitle, axisKey, axisLabel } = getTelemetryPresentation(payload?.source);
+  const formatAxisTick = (value: string | number) =>
+    payload?.source === 'lap-data' ? String(value) : String(value || '').slice(11, 19);
+
   return (
     <div className="p-4 sm:p-6 lg:p-8 bg-f1-black min-h-screen">
       <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-white mb-6 sm:mb-8">📊 Telemetry Dashboard</h1>
@@ -112,26 +117,26 @@ export default function TelemetryPage() {
       {/* Current Metrics Cards */}
       {currentMetrics && (
         <div className="grid grid-cols-2 sm:grid-cols-4 xl:grid-cols-8 gap-3 sm:gap-4 mb-8">
-          <MetricCard label="Speed" value={currentMetrics.speed.toFixed(0)} unit="km/h" color="text-f1-red" />
+          <MetricCard label={speedLabel} value={currentMetrics.speed.toFixed(0)} unit="km/h" color="text-f1-red" />
           <MetricCard label="Throttle" value={currentMetrics.throttle.toFixed(0)} unit="%" color="text-blue-400" />
           <MetricCard label="Brake" value={currentMetrics.braking.toFixed(0)} unit="%" color="text-red-500" />
           <MetricCard label="Gear" value={currentMetrics.gear} unit="" color="text-yellow-400" />
           <MetricCard label="RPM" value={Math.round(currentMetrics.rpm / 100)} unit="x100" color="text-green-400" />
-          <MetricCard label="Fuel" value={currentMetrics.fuel.toFixed(1)} unit="L" color="text-orange-400" />
           <MetricCard label="Position" value={currentMetrics.position ?? '—'} unit="" color="text-f1-accent" />
           <MetricCard label="Lap" value={currentMetrics.lap ?? '—'} unit="" color="text-purple-400" />
         </div>
       )}
 
+      <p className="mb-3 text-xs text-gray-400">Chart horizontal axis: {axisLabel}.</p>
       {/* Charts Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6 mb-6">
         {/* Speed Chart */}
         <div className="bg-f1-dark border border-f1-grid rounded-lg p-4 sm:p-6">
-          <h3 className="text-lg font-semibold text-white mb-4">Speed Profile</h3>
+          <h3 className="text-lg font-semibold text-white mb-4">{speedChartTitle}</h3>
           <ResponsiveContainer width="100%" height={280}>
             <LineChart data={telemetryData}>
               <CartesianGrid stroke="#1a1a1a" />
-              <XAxis dataKey="distance" stroke="#666" tick={{ fontSize: 12 }} />
+              <XAxis dataKey={axisKey} name={axisLabel} tickFormatter={formatAxisTick} stroke="#666" tick={{ fontSize: 12 }} />
               <YAxis stroke="#666" tick={{ fontSize: 12 }} />
               <Tooltip 
                 contentStyle={{ background: '#0c0c0c', border: '1px solid #E10600' }}
@@ -148,42 +153,12 @@ export default function TelemetryPage() {
           <ResponsiveContainer width="100%" height={280}>
             <ComposedChart data={telemetryData}>
               <CartesianGrid stroke="#1a1a1a" />
-              <XAxis dataKey="distance" stroke="#666" tick={{ fontSize: 12 }} />
+              <XAxis dataKey={axisKey} name={axisLabel} tickFormatter={formatAxisTick} stroke="#666" tick={{ fontSize: 12 }} />
               <YAxis stroke="#666" tick={{ fontSize: 12 }} />
               <Tooltip contentStyle={{ background: '#0c0c0c', border: '1px solid #E10600' }} />
               <Line type="monotone" dataKey="throttle" stroke="#27F4D2" dot={false} strokeWidth={2} />
               <Line type="monotone" dataKey="braking" stroke="#FF6B6B" dot={false} strokeWidth={2} />
             </ComposedChart>
-          </ResponsiveContainer>
-        </div>
-
-        {/* Fuel Consumption */}
-        <div className="bg-f1-dark border border-f1-grid rounded-lg p-4 sm:p-6">
-          <h3 className="text-lg font-semibold text-white mb-4">Fuel Consumption</h3>
-          <ResponsiveContainer width="100%" height={280}>
-            <AreaChart data={telemetryData}>
-              <CartesianGrid stroke="#1a1a1a" />
-              <XAxis dataKey="distance" stroke="#666" tick={{ fontSize: 12 }} />
-              <YAxis stroke="#666" tick={{ fontSize: 12 }} />
-              <Tooltip contentStyle={{ background: '#0c0c0c', border: '1px solid #E10600' }} />
-              <Area type="monotone" dataKey="fuel" fill="#FF9500" stroke="#FF9500" dot={false} />
-            </AreaChart>
-          </ResponsiveContainer>
-        </div>
-
-        {/* Tire Temperature */}
-        <div className="bg-f1-dark border border-f1-grid rounded-lg p-4 sm:p-6">
-          <h3 className="text-lg font-semibold text-white mb-4">Tire Temperature</h3>
-          <ResponsiveContainer width="100%" height={280}>
-            <LineChart data={telemetryData}>
-              <CartesianGrid stroke="#1a1a1a" />
-              <XAxis dataKey="distance" stroke="#666" tick={{ fontSize: 12 }} />
-              <YAxis stroke="#666" tick={{ fontSize: 12 }} />
-              <Tooltip contentStyle={{ background: '#0c0c0c', border: '1px solid #E10600' }} />
-              <Line type="monotone" dataKey="tireTempF" stroke="#FF1493" dot={false} strokeWidth={2} name="Front" />
-              <Line type="monotone" dataKey="tireTempR" stroke="#00FFFF" dot={false} strokeWidth={2} name="Rear" />
-              <Legend />
-            </LineChart>
           </ResponsiveContainer>
         </div>
 
@@ -193,7 +168,7 @@ export default function TelemetryPage() {
           <ResponsiveContainer width="100%" height={280}>
             <BarChart data={telemetryData}>
               <CartesianGrid stroke="#1a1a1a" />
-              <XAxis dataKey="distance" stroke="#666" tick={{ fontSize: 12 }} />
+              <XAxis dataKey={axisKey} name={axisLabel} tickFormatter={formatAxisTick} stroke="#666" tick={{ fontSize: 12 }} />
               <YAxis stroke="#666" tick={{ fontSize: 12 }} />
               <Tooltip contentStyle={{ background: '#0c0c0c', border: '1px solid #E10600' }} />
               <Bar dataKey="gear" fill="#27F4D2" />
@@ -207,7 +182,7 @@ export default function TelemetryPage() {
           <ResponsiveContainer width="100%" height={280}>
             <LineChart data={telemetryData}>
               <CartesianGrid stroke="#1a1a1a" />
-              <XAxis dataKey="distance" stroke="#666" tick={{ fontSize: 12 }} />
+              <XAxis dataKey={axisKey} name={axisLabel} tickFormatter={formatAxisTick} stroke="#666" tick={{ fontSize: 12 }} />
               <YAxis stroke="#666" tick={{ fontSize: 12 }} />
               <Tooltip 
                 contentStyle={{ background: '#0c0c0c', border: '1px solid #E10600' }}
@@ -227,7 +202,7 @@ export default function TelemetryPage() {
         <ResponsiveContainer width="100%" height={200}>
           <BarChart data={telemetryData}>
             <CartesianGrid stroke="#1a1a1a" />
-            <XAxis dataKey="distance" stroke="#666" tick={{ fontSize: 12 }} />
+            <XAxis dataKey={axisKey} name={axisLabel} tickFormatter={formatAxisTick} stroke="#666" tick={{ fontSize: 12 }} />
             <YAxis stroke="#666" tick={{ fontSize: 12 }} domain={[0, 100]} />
             <Tooltip 
               contentStyle={{ background: '#0c0c0c', border: '1px solid #E10600' }}

@@ -1,11 +1,9 @@
+import "./config/env.js";
 import express from "express";
 import cors from "cors";
-import dotenv from "dotenv";
 import redisClient from "./config/redis.js";
 import * as pollingService from "./services/pollingService.js";
 // User auth, watchlists, and live HTTP APIs live in next-app (NextAuth + Prisma).
-
-dotenv.config();
 
 const app = express();
 const PORT = process.env.PORT || 5000;

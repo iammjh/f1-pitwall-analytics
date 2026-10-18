@@ -11,6 +11,7 @@ import { f1Api } from '@/lib/f1-api';
 import { getPrisma } from '@/lib/prisma';
 import type { OpenF1Session } from '@/lib/live-telemetry';
 import { selectPreferredSession } from '@/lib/live-telemetry';
+import { resolveSyncSeason, syncRaceSchedules } from '@/lib/race-sync';
 
 const redisUrl = getRedisUrl();
 
@@ -30,36 +31,22 @@ async function resolveTelemetrySession(season: number): Promise<OpenF1Session | 
 }
 
 raceSyncQueue.process(async (job) => {
-  const season = Number(job.data.season) || new Date().getFullYear();
+  const season = resolveSyncSeason(job.data.season, { recurring: Boolean(job.opts.repeat) });
   const prisma = getPrisma();
 
   try {
     const res = await f1Api.races(season);
     const races = res.data.MRData.RaceTable.Races;
 
-    for (const race of races) {
-      await prisma.race.upsert({
-        where: { raceId: parseInt(race.round, 10) },
-        create: {
-          raceId: parseInt(race.round, 10),
-          season,
-          round: parseInt(race.round, 10),
-          name: race.name,
-          circuit: race.Circuit.name,
-          date: new Date(race.date),
-          time: race.time,
-          status: 'scheduled',
-        },
-        update: {
-          status: 'scheduled',
-        },
-      });
+    if (!Array.isArray(races)) {
+      throw new Error('Race sync received an invalid race schedule');
     }
+    const processed = await syncRaceSchedules(races, season, prisma.race);
 
     const redis = await getRedis();
     await redis.setEx(`races:${season}`, 3600, JSON.stringify(races));
 
-    return { processed: races.length };
+    return { processed };
   } catch (error) {
     console.error('Race sync failed:', error);
     throw error;
@@ -67,7 +54,7 @@ raceSyncQueue.process(async (job) => {
 });
 
 telemetrySyncQueue.process(async (job) => {
-  const season = Number(job.data.season) || new Date().getFullYear();
+  const season = resolveSyncSeason(job.data.season, { recurring: Boolean(job.opts.repeat) });
   const session = await resolveTelemetrySession(season);
 
   if (!session?.session_key) {
@@ -84,15 +71,13 @@ telemetrySyncQueue.process(async (job) => {
   return { session_key: session.session_key, cached: true };
 });
 
-export function scheduleJobs() {
+export async function scheduleJobs() {
   if (process.env.BACKGROUND_JOBS_ENABLED !== 'true') {
     return false;
   }
 
-  const season = new Date().getFullYear();
-
-  raceSyncQueue.add({ season }, { repeat: { every: RACE_SYNC_MS } });
-  telemetrySyncQueue.add({ season }, { repeat: { every: TELEMETRY_SYNC_MS } });
+  await raceSyncQueue.add({}, { repeat: { every: RACE_SYNC_MS } });
+  await telemetrySyncQueue.add({}, { repeat: { every: TELEMETRY_SYNC_MS } });
 
   console.log('[jobs] Background sync enabled (race + telemetry queues scheduled)');
   return true;

@@ -3,12 +3,22 @@ const nextConfig = {
   reactStrictMode: true,
   distDir: process.env.NEXT_DIST_DIR || '.next',
 
+  async headers() {
+    return [{
+      source: '/auth/:path*',
+      headers: [
+        { key: 'Referrer-Policy', value: 'no-referrer' },
+        { key: 'X-Robots-Tag', value: 'noindex, nofollow' },
+      ],
+    }];
+  },
+
   async redirects() {
     return [
       {
-        source: '/',
-        destination: '/home',
-        permanent: false,
+        source: '/home',
+        destination: '/',
+        permanent: true,
       },
     ];
   },

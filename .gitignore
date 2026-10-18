@@ -72,3 +72,8 @@ Desktop.ini
 
 # Docker env overrides (covered above)
 .sixth
+# Generated render snapshots and CSS dumps (never commit)
+next-app/rendered-home*.html
+next-app/layout-css.txt
+# Migration review manifests contain private account/watchlist contents.
+**/legacy-review*.json

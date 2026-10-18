@@ -1,192 +1,58 @@
-# F1 Analytics Hub - Phase 3 Setup Guide
+# Polling support service setup
 
-> Note: `next-app` owns all user auth, watchlists, and API routes. This Express service is background polling + Redis cache only.
+The Next.js app owns authentication, watchlists, MongoDB/Prisma, and user-facing APIs. This optional Express service polls Jolpica and caches race data in Redis. It exposes `GET /api/health` on port 5000.
 
-## Project Structure
-```
-f1-analytics/
-├── server/                    # Background support service
-│   ├── config/
-│   │   └── redis.js          # Redis connection
-│   ├── services/
-│   │   ├── emailService.js  # Email notifications
-│   │   └── pollingService.js # Race data polling → Redis
-│   ├── .env                 # Environment variables
-│   ├── package.json
-│   └── server.js            # Health check + polling worker
-└── next-app/                # Next.js app (auth, watchlists, dashboards)
-```
+## Docker
 
-## Prerequisites
-- Node.js 16+
-- MongoDB (local or Atlas)
-- Redis (local or Cloud)
-- Gmail account (for email testing)
+Complete the environment and MongoDB setup in [the project README](../README.md), then run from the repository root:
 
-## Backend Setup
-
-### 1. Install Dependencies
 ```bash
+docker compose up -d --build backend
+```
+
+Compose supplies Redis credentials at runtime. The image uses an allowlist of runtime files; `.env` files, keys, local dependencies, and documentation are excluded. Do not add secrets to application JavaScript or Docker build arguments.
+
+## Run directly with Node.js
+
+Use Node.js 22 and npm. Start Redis using the project's Compose configuration:
+
+```bash
+# From the repository root, after configuring root .env:
+docker compose up -d redis
 cd server
-npm install
+npm ci
+cp .env.example .env
 ```
 
-### 2. Configure Environment (.env)
-```
-PORT=5000
-NODE_ENV=development
-POLLING_ENABLED=true
-POLL_INTERVAL_MINUTES=5
-REDIS_HOST=localhost
-REDIS_PORT=6379
-REDIS_PASSWORD=
-JOLPICA_API=https://api.jolpi.ca/ergast/f1
-EMAIL_USER=your_email@gmail.com
-EMAIL_PASSWORD=your_app_password
-EMAIL_SERVICE=gmail
-FRONTEND_URL=http://localhost:3000
-ALLOWED_ORIGINS=http://localhost:3000
-```
+Set `REDIS_PASSWORD` in `server/.env` to the same value as root `.env`. The host and port defaults (`localhost:6379`) match the local Docker port. Then run:
 
-**Polling notes:**
-- Set `POLLING_ENABLED=false` to run the support service without Jolpica background fetches.
-- `POLL_INTERVAL_MINUTES` accepts 1–1440 (default 5).
-
-**Redis password notes:**
-- **Local dev, no Docker:** empty `REDIS_PASSWORD` is fine if Redis only listens on `127.0.0.1`.
-- **Local dev with `docker-compose`:** Redis runs with `--requirepass` — set the same password in `server/.env` and root `.env` (`REDIS_PASSWORD=...`).
-- **Production:** `REDIS_PASSWORD` is **required** — the support service refuses to start without it when `NODE_ENV=production`.
-
-Auth and MongoDB are configured in `next-app/.env.local` (NextAuth + Prisma).
-
-### 3. Start Redis (if local)
-```bash
-# Windows
-# Download Redis from https://github.com/microsoftarchive/redis/releases
-redis-server
-
-# Or use Redis Cloud
-# Update Redis config in server/config/redis.js
-```
-
-### 4. Start support service
 ```bash
 npm start
-# Or for development with auto-reload:
+# Or use auto-reload during development:
 npm run dev
 ```
 
-Expected output:
-```
-✓ Redis connected
-╔════════════════════════════════════╗
-║  F1 ANALYTICS HUB - SUPPORT SVC   ║
-║  Status: Running                   ║
-║  Port: 5000                        ║
-║  Environment: development          ║
-╚════════════════════════════════════╝
+Check `http://localhost:5000/api/health`.
 
-✓ Polling service started (interval: 5 min)
-```
+## Environment
 
-## Frontend Setup
+- `PORT`: defaults to 5000.
+- `POLLING_ENABLED`: set `false` to disable background Jolpica fetches.
+- `POLL_INTERVAL_MINUTES`: polling interval, 1–1440 minutes; default 5.
+- `REDIS_HOST`, `REDIS_PORT`, `REDIS_PASSWORD`: Redis connection settings. Compose Redis requires a password. The service requires a password when `NODE_ENV=production`. A locally installed Redis that is restricted to localhost and has no authentication can use an empty password during development.
+- `JOLPICA_API`: upstream historical data endpoint.
+- `FRONTEND_URL` and `ALLOWED_ORIGINS`: frontend URL and comma-separated CORS origins.
 
-### 1. Start the Next.js app
-```bash
-cd ../next-app
-npm install
-npm run dev
-```
+MongoDB, NextAuth, OAuth, and the Next.js Bull job flag belong in `next-app/.env.local`; this service does not consume them. See [the project README](../README.md) for authenticated replica-set bootstrap, Prisma `db:push`, and app startup instructions.
 
-### 2. Open in Browser
-```
-http://localhost:3000
-```
+## Notification status
 
-### 3. Development Direction
-- **Auth and watchlists:** use Next.js only — `next-app/app/auth/signin` and `next-app/app/api/*`.
-- **This Express service:** background race-data polling, Redis cache, and email notifications only.
-
-## API Endpoints
-
-### Express backend (support services)
-- **GET** `/api/health` — server health check
-
-### User-facing APIs (Next.js — port 3000)
-- **NextAuth:** `/api/auth/*` — sign-in, sign-up (credentials + OAuth)
-- **Watchlist:** `/api/watchlist` — CRUD (session cookie auth)
-- **Live / telemetry:** `/api/live/race`, `/api/telemetry`, etc.
-
-## Features Implemented
-
-### Phase 3 - Live & Auth (Current)
-✅ User authentication via NextAuth (Next.js) — credentials + OAuth
-✅ Personal profile and preferences (Prisma)
-✅ Watchlist creation and management (Next.js API routes)
-✅ Email notifications for race alerts
-✅ Redis-based race data polling (every 5 minutes)
-✅ Live race dashboard showing upcoming/active races
-✅ Push notification support (UI ready, hooks in place)
-
-### Phase 2 - Analytics (Previous)
-✅ Circuit explorer with sector data
-✅ Pit stop strategy visualizer
-✅ Driver head-to-head comparison
-
-### Phase 1 - Fundamentals (Previous)
-✅ Driver standings
-✅ Constructor standings
-✅ Race results with filtering
-✅ Driver profiles
-✅ Constructor profiles
-✅ Points progression charts
-
-## Testing Credentials
-
-Create an account at `http://localhost:3000/auth/signin` (Create Account tab), or sign in with GitHub/Google if configured.
+This service does not send notifications. Race-start email alerts are sent by `next-app` (`/api/notifications/race-alerts`), which needs the SMTP and `CRON_SECRET` variables listed in `next-app/.env.example`. Push notifications are not connected. Email is optional for running this service.
 
 ## Troubleshooting
 
-**"Cannot connect to MongoDB"**
-- Ensure MongoDB is running
-- Check MONGODB_URI in .env is correct
-- If using Atlas, ensure IP whitelist includes your IP
-
-**"Cannot connect to Redis"**
-- Ensure Redis server is running
-- Check REDIS_HOST and REDIS_PORT in config
-- Verify redis-server process is active
-
-**"Email not sending"**
-- Generate Gmail app-specific password: https://myaccount.google.com/apppasswords
-- Update EMAIL_PASSWORD in .env with app password (not your Gmail password)
-- Enable "Less secure app access" if needed
-
-**"CORS errors in frontend"**
-- Ensure FRONTEND_URL in .env matches your frontend URL
-- Check that Express cors middleware is initialized
-
-## Next Steps (Phase 4+)
-
-- [ ] Real-time WebSocket updates (replace polling)
-- [ ] Advanced push notifications with service workers
-- [ ] Race telemetry (DRS, tire compounds, sector times)
-- [ ] Prediction algorithms and odds
-- [ ] Session playback and replay analysis
-- [ ] Mobile app (React Native)
-- [ ] PDF report export
-- [ ] Dark mode toggle (already styled)
-
-## Support
-
-For issues, check:
-1. Server logs in terminal
-2. MongoDB connection status
-3. Redis service status
-4. Browser console for frontend errors
-5. Network tab for API calls
-
----
-
-**Last Updated:** March 2026
-**Status:** Phase 3 - Live & Auth (In Progress)
+- **Redis connection errors:** confirm the Redis service is running and host/port/password match. Use `redis` as the hostname from Compose containers and `localhost` from the host.
+- **Production exits on startup:** set a nonempty Redis password and configure Redis to require it.
+- **MongoDB or account-creation errors:** troubleshoot the Next.js app, verify `MONGODB_URI`, and rerun `docker compose run --rm mongodb-init`. Existing data volumes retain their original account credentials. Never remove volumes to bypass a connection problem.
+- **CORS errors:** set `ALLOWED_ORIGINS` to the exact frontend origin, including scheme and port.
+- **No alert emails:** alerts come from `next-app`, not this service. Check `SMTP_HOST`, `SMTP_FROM`, and `CRON_SECRET` there, and that the user has email and race-start alerts on.

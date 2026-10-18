@@ -5,6 +5,6 @@ export async function register() {
     }
 
     const { scheduleJobs } = await import('./lib/jobs');
-    scheduleJobs();
+    await scheduleJobs();
   }
 }

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { getMaxSeason, parseRoundParam, parseSeasonParam } from '@/lib/query-params';
+import { getMaxSeason, parseRoundParam, parseSeasonParam, parseSessionKeyParam } from '@/lib/query-params';
 
 describe('parseSeasonParam', () => {
   it('defaults to the current year when omitted', () => {
@@ -37,5 +37,27 @@ describe('parseRoundParam', () => {
   it('rejects invalid round strings', () => {
     const result = parseRoundParam('abc');
     expect(result?.ok).toBe(false);
+  });
+});
+
+describe('parseSessionKeyParam', () => {
+  it('returns null when omitted or blank', () => {
+    expect(parseSessionKeyParam(null)).toBeNull();
+    expect(parseSessionKeyParam('   ')).toBeNull();
+  });
+
+  it('accepts a positive integer key', () => {
+    expect(parseSessionKeyParam('11388')).toEqual({ ok: true, value: 11388 });
+  });
+
+  it('rejects non-numeric, signed, decimal, zero, and oversized keys', () => {
+    for (const raw of ['abc', '12abc', '-5', '1.5', '0', '12345678901']) {
+      expect(parseSessionKeyParam(raw)?.ok, raw).toBe(false);
+    }
+  });
+
+  it('rejects separators and injected query text', () => {
+    expect(parseSessionKeyParam('1&driver_number=1')?.ok).toBe(false);
+    expect(parseSessionKeyParam('1/../2')?.ok).toBe(false);
   });
 });

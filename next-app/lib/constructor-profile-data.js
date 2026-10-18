@@ -1,3 +1,9 @@
+// Curated team facts: people, titles, visuals. These do not come from the race APIs, so review them
+// each season. Last reviewed 2026-10-18: Red Bull and Racing Bulls principals were corrected against
+// 2026 team-principal coverage. Other people fields (principals, technical chiefs, race engineers)
+// are not yet re-verified and may be out of date.
+const CONSTRUCTOR_PROFILE_REVIEWED_ON = "2026-10-18";
+
 const CONSTRUCTOR_PROFILE_META = {
   mercedes: {
     founder: "Mercedes-Benz modern works team",
@@ -64,7 +70,7 @@ const CONSTRUCTOR_PROFILE_META = {
     visualTitle: "Red_Bull_Racing",
     visualSearch: "Oracle Red Bull Racing Formula One team",
     visualImageIndex: 1,
-    principal: "Christian Horner",
+    principal: "Laurent Mekies",
     technicalChief: "Pierre Wache",
     raceEngineers: [
       "Max Verstappen - Gianpiero Lambiase",
@@ -100,7 +106,7 @@ const CONSTRUCTOR_PROFILE_META = {
     visualTitle: "Racing_Bulls",
     visualSearch: "Racing Bulls Formula One Team",
     visualImageIndex: 1,
-    principal: "Laurent Mekies",
+    principal: "Alan Permane",
     technicalChief: "Tim Goss",
     raceEngineers: [
       "Race engineer line-up - TBA",
@@ -210,4 +216,4 @@ export function getConstructorProfileMeta(constructorId) {
   return CONSTRUCTOR_PROFILE_META[canonicalId] || null;
 }
 
-export { CONSTRUCTOR_PROFILE_META, CONSTRUCTOR_PROFILE_ALIASES };
+export { CONSTRUCTOR_PROFILE_META, CONSTRUCTOR_PROFILE_ALIASES, CONSTRUCTOR_PROFILE_REVIEWED_ON };

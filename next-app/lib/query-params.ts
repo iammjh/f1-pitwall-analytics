@@ -52,3 +52,19 @@ export function parseRoundParam(
 
   return { ok: true, value: round };
 }
+
+/** Validate ?sessionKey= — returns null when omitted. OpenF1 session keys are positive integers. */
+export function parseSessionKeyParam(
+  raw: string | null,
+): ParseOk<number> | ParseErr | null {
+  if (raw === null || raw.trim() === '') {
+    return null;
+  }
+
+  const trimmed = raw.trim();
+  if (!/^\d{1,10}$/.test(trimmed) || Number(trimmed) < 1) {
+    return { ok: false, error: 'Invalid sessionKey. Must be a positive integer.' };
+  }
+
+  return { ok: true, value: Number(trimmed) };
+}

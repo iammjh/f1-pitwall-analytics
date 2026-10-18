@@ -10,8 +10,9 @@ import {
 } from '@/lib/dashboard-watchlist';
 import { getTeamColor } from '@/lib/f1-display';
 import { fetchSeasonStandingsBundle } from '@/lib/jolpica-client';
+import { DEFAULT_SEASON, getSeasonOptions } from '@/lib/seasons';
 
-const SEASONS = ['2026', '2025', '2024', '2023', '2022', '2021', '2020', '2019'];
+const SEASONS = getSeasonOptions(2019);
 
 type WatchlistBucket = 'drivers' | 'teams' | 'races';
 
@@ -103,7 +104,7 @@ function RemoveButton({
 }
 
 export default function WatchlistPage() {
-  const [season, setSeason] = useState('2026');
+  const [season, setSeason] = useState(DEFAULT_SEASON);
   const [watchlist, setWatchlist] = useState<DashboardWatchlist | null>(null);
   const [drivers, setDrivers] = useState<DriverStanding[]>([]);
   const [teams, setTeams] = useState<ConstructorStanding[]>([]);
@@ -113,9 +114,7 @@ export default function WatchlistPage() {
   const [error, setError] = useState<string | null>(null);
 
   const loadSeasonData = useCallback(async (nextSeason: string) => {
-    const { drivers: nextDrivers, constructors: nextTeams } = await fetchSeasonStandingsBundle(nextSeason);
-    setDrivers(nextDrivers);
-    setTeams(nextTeams);
+    return fetchSeasonStandingsBundle(nextSeason);
   }, []);
 
   useEffect(() => {
@@ -146,8 +145,15 @@ export default function WatchlistPage() {
     let active = true;
     setSeasonLoading(true);
     setError(null);
+    setDrivers([]);
+    setTeams([]);
 
     loadSeasonData(season)
+      .then(({ drivers: nextDrivers, constructors: nextTeams }) => {
+        if (!active) return;
+        setDrivers(nextDrivers);
+        setTeams(nextTeams);
+      })
       .catch((err) => {
         if (active) {
           console.error('Failed to load standings data:', err);

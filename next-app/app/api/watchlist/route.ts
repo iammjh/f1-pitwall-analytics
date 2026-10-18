@@ -2,10 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { getAuthOptions } from '@/lib/auth-config';
 import { getPrisma } from '@/lib/prisma';
-import {
-  validateWatchlistDescription,
-  validateWatchlistName,
-} from '@/lib/watchlist-validation';
+import { validateWatchlistInput } from '@/lib/watchlist-validation';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
@@ -42,37 +39,21 @@ export async function POST(req: NextRequest) {
   }
 
   try {
-    const body = await req.json();
-
-    const nameResult = validateWatchlistName(body.name ?? 'My Watchlist');
-    if (!nameResult.ok) {
-      return NextResponse.json({ error: nameResult.error }, { status: 400 });
+    let body: unknown;
+    try {
+      body = await req.json();
+    } catch {
+      return NextResponse.json({ error: 'Request body must be valid JSON.' }, { status: 400 });
     }
-    const descriptionResult = validateWatchlistDescription(body.description);
-    if (!descriptionResult.ok) {
-      return NextResponse.json({ error: descriptionResult.error }, { status: 400 });
-    }
-
-    // Validate that array fields are actually arrays (guard against legacy
-    // JSON-string payloads from clients that haven't been updated yet)
-    const toArray = (v: unknown): string[] => {
-      if (Array.isArray(v)) return v.map(String);
-      if (typeof v === 'string') {
-        try { return JSON.parse(v); } catch { return []; }
-      }
-      return [];
-    };
+    const result = validateWatchlistInput(body, 'create');
+    if (!result.ok) return NextResponse.json({ error: result.error }, { status: 400 });
 
     const prisma = getPrisma();
     const watchlist = await prisma.watchlist.create({
       data: {
-        userId:      session.user.id,
-        name:        nameResult.value,
-        description: descriptionResult.value,
-        drivers:     toArray(body.drivers),
-        teams:       toArray(body.teams),
-        races:       toArray(body.races),
-        isPublic:    Boolean(body.isPublic),
+        ...result.value,
+        name: result.value.name!,
+        userId: session.user.id,
       },
     });
 

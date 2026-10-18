@@ -1,0 +1,9 @@
+# Only runtime source and dependency manifests may enter the build context.
+**
+!package.json
+!package-lock.json
+!server.js
+!config/
+!config/*.js
+!services/
+!services/*.js

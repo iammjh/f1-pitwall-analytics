@@ -1,4 +1,10 @@
 import axios from 'axios';
+import {
+  getOpenF1AccessToken,
+  hasOpenF1Credentials,
+  invalidateOpenF1Token,
+  normalizeOpenF1Error,
+} from '@/lib/openf1-auth';
 
 const OPENF1_API = process.env.OPENF1_API || 'https://api.openf1.org/v1';
 const ERGAST_API = process.env.ERGAST_API || 'https://api.jolpi.ca/ergast/f1';
@@ -30,18 +36,30 @@ export const openF1 = axios.create({
   timeout: 10000,
 });
 
+// Only server routes/jobs import this client. Provider credentials never reach the browser.
+openF1.interceptors.request.use(async (config) => {
+  const token = await getOpenF1AccessToken();
+  if (token) config.headers.set('Authorization', `Bearer ${token}`);
+  return config;
+});
+
 // Response interceptor to handle OpenF1 API 429 Rate Limit (max 3 req/sec)
 openF1.interceptors.response.use(
   (response) => response,
   async (error) => {
     const config = error.config;
+    if (config && error.response?.status === 401 && hasOpenF1Credentials() && !config.__authRetried) {
+      config.__authRetried = true;
+      invalidateOpenF1Token();
+      return openF1(config);
+    }
     if (!config || error.response?.status !== 429) {
-      return Promise.reject(error);
+      return Promise.reject(normalizeOpenF1Error(error));
     }
 
     config.__retryCount = config.__retryCount || 0;
     if (config.__retryCount >= 3) {
-      return Promise.reject(error);
+      return Promise.reject(normalizeOpenF1Error(error));
     }
 
     config.__retryCount += 1;
@@ -93,12 +111,36 @@ export const f1Api = {
     return openF1.get('/position', { params: normalizeParams(params, 'session_key') });
   },
 
+  stints: async (params?: number | string | OpenF1Params) => {
+    return openF1.get('/stints', { params: normalizeParams(params, 'session_key') });
+  },
+
   pitstops: async (params?: number | string | OpenF1Params) => {
     return openF1.get('/pit', { params: normalizeParams(params, 'session_key') });
   },
 
   carData: async (params?: number | string | OpenF1Params) => {
     return openF1.get('/car_data', { params: normalizeParams(params, 'session_key') });
+  },
+
+  /**
+   * Car samples for one driver between two timestamps. OpenF1 reads the filter key `date%3E=` (the
+   * operator's "=" stays literal). Passing `date>=` as a params key encodes it as `date%3E%3D=`, and
+   * OpenF1 then answers "No results found".
+   */
+  carDataWindow: async (
+    sessionKey: number | string,
+    driverNumber: number | string,
+    from?: string,
+    to?: string,
+  ) => {
+    const query = [
+      `session_key=${encodeURIComponent(String(sessionKey))}`,
+      `driver_number=${encodeURIComponent(String(driverNumber))}`,
+      ...(from ? [`date%3E=${encodeURIComponent(from)}`] : []),
+      ...(to ? [`date%3C=${encodeURIComponent(to)}`] : []),
+    ].join('&');
+    return openF1.get(`/car_data?${query}`);
   },
 
   // Historical (Ergast fallback)

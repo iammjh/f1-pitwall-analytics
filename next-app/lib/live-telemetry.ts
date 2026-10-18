@@ -118,10 +118,8 @@ export interface TelemetrySample {
   speed: number;
   throttle: number;
   braking: number;
-  fuel: number;
-  tireTempF: number;
-  tireTempR: number;
-  drs: number;
+  /** 100 when DRS is open, 0 when closed, null when the feed sent no DRS value for the samples in view. */
+  drs: number | null;
   gear: number;
   rpm: number;
   position: number | null;
@@ -138,6 +136,26 @@ export interface TelemetryPayload {
   message: string;
   source: "car-data" | "lap-data" | "none";
   derivedMetricsNotice: string | null;
+}
+
+export function getTelemetryPresentation(source?: TelemetryPayload["source"]) {
+  const lapFallback = source === "lap-data";
+  return {
+    sourceLabel:
+      source === "car-data"
+        ? "OpenF1 car samples"
+        : lapFallback
+          ? "Speed-trap readings + estimates"
+          : "Unavailable",
+    speedLabel: lapFallback ? "Speed trap" : "Speed",
+    speedChartTitle: lapFallback ? "Speed Trap by Lap" : "Speed Profile",
+    axisKey: lapFallback ? "lap" : "time",
+    axisLabel: lapFallback ? "Lap number" : "Session time (UTC)",
+    // Car samples are measured OpenF1 channels, so only the lap summary fallback needs a notice.
+    derivedMetricsNotice: lapFallback
+      ? "Speed is a speed-trap reading for each lap. Throttle, brake, gear, RPM and DRS are modeled estimates."
+      : null,
+  };
 }
 
 function asDate(value?: string | null) {
@@ -557,27 +575,30 @@ export function getTelemetryWindowStart(laps: OpenF1Lap[], lookbackLaps = 3) {
   return start;
 }
 
-function downsampleSamples<T>(samples: T[], maxSamples = DEFAULT_TIMELINE_SAMPLES) {
+const DRS_OPEN_VALUES = [10, 12, 14];
+
+/**
+ * Splits time-ordered car data into at most maxSamples consecutive buckets. Each bucket is shown as one point, and
+ * DRS is read from the whole bucket: a point sample would miss the short windows where the flap is open.
+ */
+function bucketSamples<T>(samples: T[], maxSamples = DEFAULT_TIMELINE_SAMPLES): T[][] {
   if (samples.length <= maxSamples) {
-    return samples;
+    return samples.map((sample) => [sample]);
   }
 
   const step = Math.ceil(samples.length / maxSamples);
-  return samples.filter((_, index) => index % step === 0 || index === samples.length - 1);
+  const buckets: T[][] = [];
+  for (let start = 0; start < samples.length; start += step) {
+    buckets.push(samples.slice(start, start + step));
+  }
+  return buckets;
 }
 
-function estimateFuel(sampleIndex: number, totalSamples: number, lapNumber: number | null, maxLap: number) {
-  const sampleProgress = totalSamples > 1 ? sampleIndex / (totalSamples - 1) : 0;
-  const lapProgress = maxLap > 0 && lapNumber ? lapNumber / maxLap : sampleProgress;
-  return Number((100 - Math.max(sampleProgress, lapProgress) * 72).toFixed(1));
-}
-
-function estimateFrontTireTemp(speed: number, throttle: number, braking: number) {
-  return Number((72 + speed * 0.04 + throttle * 0.08 + braking * 0.05).toFixed(1));
-}
-
-function estimateRearTireTemp(speed: number, throttle: number, braking: number) {
-  return Number((70 + speed * 0.035 + throttle * 0.1 + braking * 0.03).toFixed(1));
+/** Open if any reading in the bucket is open; null when the bucket has no DRS readings at all. */
+function drsForBucket(bucket: OpenF1CarData[]): number | null {
+  const readings = bucket.map((sample) => asNumber(sample.drs)).filter((value): value is number => value !== null);
+  if (!readings.length) return null;
+  return readings.some((value) => DRS_OPEN_VALUES.includes(value)) ? 100 : 0;
 }
 
 function buildTelemetryFromCarData(args: {
@@ -601,8 +622,8 @@ function buildTelemetryFromCarData(args: {
     return aTime - bTime;
   });
 
-  const maxLap = Math.max(0, ...orderedLaps.map((lap) => asNumber(lap.lap_number) ?? 0));
-  const samples = downsampleSamples(orderedCarData);
+  const buckets = bucketSamples(orderedCarData);
+  const samples = buckets.map((bucket) => bucket[0]);
 
   let lapIndex = 0;
   let positionIndex = 0;
@@ -637,17 +658,14 @@ function buildTelemetryFromCarData(args: {
     const braking = clamp(asNumber(sample.brake) ?? 0, 0, 100);
     const gear = clamp(asNumber(sample.n_gear) ?? 0, 0, 8);
     const rpm = asNumber(sample.rpm) ?? 0;
-    const drsRaw = asNumber(sample.drs) ?? 0;
-    const drs = drsRaw > 0 ? 100 : 0;
+    // OpenF1: 1 is off, 8 is eligible; only 10, 12 and 14 mean activated.
+    const drs = drsForBucket(buckets[index]);
 
     return {
       distance: index * 100,
       speed,
       throttle,
       braking,
-      fuel: estimateFuel(index, samples.length, currentLap, maxLap),
-      tireTempF: estimateFrontTireTemp(speed, throttle, braking),
-      tireTempR: estimateRearTireTemp(speed, throttle, braking),
       drs,
       gear,
       rpm,
@@ -663,12 +681,15 @@ function buildTelemetryFromLaps(args: {
   positions: OpenF1Position[];
 }) {
   const orderedLaps = [...args.laps]
-    .filter((lap) => asNumber(lap.lap_number) !== null)
+    .filter((lap) => {
+      const lapNumber = asNumber(lap.lap_number);
+      const speed = asNumber(lap.st_speed);
+      return lapNumber !== null && lapNumber > 0 && speed !== null && speed >= 0;
+    })
     .sort((a, b) => (asNumber(a.lap_number) ?? 0) - (asNumber(b.lap_number) ?? 0))
     .slice(-DEFAULT_TIMELINE_SAMPLES);
   const latestPosition =
     latestByDriver(args.positions, (row) => row.date).values().next().value?.position ?? null;
-  const maxLap = Math.max(0, ...orderedLaps.map((lap) => asNumber(lap.lap_number) ?? 0));
 
   return orderedLaps.map((lap, index) => {
     const lapNumber = asNumber(lap.lap_number);
@@ -684,10 +705,7 @@ function buildTelemetryFromLaps(args: {
       speed,
       throttle,
       braking,
-      fuel: estimateFuel(index, orderedLaps.length, lapNumber, maxLap),
-      tireTempF: estimateFrontTireTemp(speed, throttle, braking),
-      tireTempR: estimateRearTireTemp(speed, throttle, braking),
-      drs: speed >= 285 ? 100 : 0,
+      drs: null, // the lap summary has no DRS reading, so none is guessed from speed
       gear,
       rpm,
       position: asNumber(latestPosition),
@@ -722,7 +740,7 @@ export function normalizeTelemetryPayload(args: {
         : [];
 
   const source: TelemetryPayload["source"] =
-    carData.length > 0 ? "car-data" : laps.length > 0 ? "lap-data" : "none";
+    carData.length > 0 ? "car-data" : samples.length > 0 ? "lap-data" : "none";
 
   const currentMetrics = samples[samples.length - 1] || null;
   const driverName = selectedDriver?.name || "the selected driver";
@@ -731,7 +749,7 @@ export function normalizeTelemetryPayload(args: {
   if (source === "car-data") {
     message = `Showing OpenF1 telemetry samples for ${driverName}.`;
   } else if (source === "lap-data") {
-    message = `Showing lap-derived telemetry estimates for ${driverName} because per-sample car data was unavailable.`;
+    message = `Showing lap speed-trap readings and modeled telemetry for ${driverName} because per-sample car data was unavailable.`;
   }
 
   return {
@@ -742,9 +760,6 @@ export function normalizeTelemetryPayload(args: {
     currentMetrics,
     message,
     source,
-    derivedMetricsNotice:
-      source === "none"
-        ? null
-        : "Fuel and tire temperature charts are estimated from the available OpenF1 timing feed.",
+    derivedMetricsNotice: getTelemetryPresentation(source).derivedMetricsNotice,
   };
 }

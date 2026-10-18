@@ -3,16 +3,19 @@ import './globals.css';
 import { AuthProvider } from './providers';
 import { getGoogleSiteVerification } from '@/lib/google-site-verification';
 import ScrollToTop from '@/components/ScrollToTop';
+import PwaRegister from '@/components/PwaRegister';
+import { SITE_URL } from '@/lib/site-config';
 
 const googleSiteVerification = getGoogleSiteVerification();
 
 export const metadata: Metadata = {
-  metadataBase: new URL('https://pitwall-analytics.vercel.app'),
+  metadataBase: new URL(SITE_URL),
   title: {
-    default: 'Pitwall Analytics Hub — Real-Time Telemetry & Strategy',
-    template: '%s | Pitwall Analytics Hub',
+    default: 'Pitwall Analytics: F1 Telemetry, Standings and Race Strategy',
+    template: '%s | Pitwall Analytics',
   },
-  description: 'Unleash live Formula 1 telemetry, race strategy simulations, driver rankings, and head-to-head comparisons in a high-tech dashboard interface.',
+  description: 'Formula 1 analytics hub with championship standings, driver and constructor comparisons, race stories, race replays and pit-stop strategy. Seasons from 1996.',
+  applicationName: 'Pitwall Analytics',
   icons: {
     icon: '/F1-Logo.png',
     shortcut: '/F1-Logo.png',
@@ -47,16 +50,12 @@ export const metadata: Metadata = {
   verification: googleSiteVerification
     ? { google: googleSiteVerification }
     : undefined,
-  alternates: {
-    canonical: 'https://pitwall-analytics.vercel.app',
-  },
   openGraph: {
     type: 'website',
     locale: 'en_US',
-    url: 'https://pitwall-analytics.vercel.app',
-    title: 'Pitwall Analytics Hub — Real-Time Telemetry & Strategy',
-    description: 'Unleash live Formula 1 telemetry, race strategy simulations, driver rankings, and head-to-head comparisons in a high-tech dashboard interface.',
-    siteName: 'Pitwall Analytics Hub',
+    title: 'Pitwall Analytics: F1 Telemetry, Standings and Race Strategy',
+    description: 'Formula 1 analytics hub with championship standings, driver and constructor comparisons, race stories, race replays and pit-stop strategy.',
+    siteName: 'Pitwall Analytics',
     images: [
       {
         url: '/f1_home.png',
@@ -68,8 +67,8 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: 'summary_large_image',
-    title: 'Pitwall Analytics Hub — Real-Time Telemetry & Strategy',
-    description: 'Unleash live Formula 1 telemetry, race strategy simulations, driver rankings, and head-to-head comparisons in a high-tech dashboard interface.',
+    title: 'Pitwall Analytics: F1 Telemetry, Standings and Race Strategy',
+    description: 'Formula 1 analytics hub with championship standings, driver and constructor comparisons, race stories, race replays and pit-stop strategy.',
     images: ['/f1_home.png'],
     creator: '@iammjh',
   },
@@ -97,6 +96,7 @@ export default function RootLayout({
         <AuthProvider>
           {children}
           <ScrollToTop />
+          <PwaRegister />
         </AuthProvider>
       </body>
     </html>

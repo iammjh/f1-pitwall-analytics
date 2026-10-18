@@ -26,6 +26,30 @@ datasource db {
 
 // ─── Auth models (required by @next-auth/prisma-adapter) ──────────────────────
 
+// One row per alert sent to a user. The unique key makes concurrent scheduler runs send each alert once.
+model NotificationLog {
+  id       String   @id @default(auto()) @map("_id") @db.ObjectId
+  userId   String   @db.ObjectId
+  eventKey String   // e.g. "race-start:2026:5"
+  channel  String   // e.g. "email"
+  sentAt   DateTime @default(now())
+
+  @@unique([userId, eventKey, channel])
+}
+
+// One browser push subscription per device. The endpoint is unique, so re-subscribing updates the row.
+model PushSubscription {
+  id        String   @id @default(auto()) @map("_id") @db.ObjectId
+  userId    String   @db.ObjectId
+  endpoint  String   @unique
+  p256dh    String
+  auth      String
+  createdAt DateTime @default(now())
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
+
 model User {
   id            String           @id @default(auto()) @map("_id") @db.ObjectId
   name          String?
@@ -33,10 +57,12 @@ model User {
   emailVerified DateTime?
   image         String?
   password      String?          // bcrypt hash — used by CredentialsProvider
+  passwordChangedAt DateTime?     // revokes sessions issued before a password recovery
   accounts      Account[]
   sessions      Session[]
   watchlists    Watchlist[]
   preferences   UserPreferences?
+  pushSubscriptions PushSubscription[]
   createdAt     DateTime         @default(now())
   updatedAt     DateTime         @updatedAt
 }
@@ -79,6 +105,21 @@ model VerificationToken {
   @@unique([identifier, token])
 }
 
+// Durable mail outbox; the public recovery endpoint never looks up account existence.
+model PasswordResetDelivery {
+  id           String   @id @default(auto()) @map("_id") @db.ObjectId
+  kind         String   // request | changed
+  email        String
+  createdAt    DateTime @default(now())
+  availableAt  DateTime @default(now())
+  expires      DateTime
+  leaseUntil   DateTime?
+  claimToken   String?
+  attempts     Int      @default(0)
+
+  @@index([availableAt, expires])
+}
+
 // ─── App models ───────────────────────────────────────────────────────────────
 
 model UserPreferences {
@@ -118,7 +159,7 @@ model Watchlist {
 
 model Race {
   id        String       @id @default(auto()) @map("_id") @db.ObjectId
-  raceId    Int          @unique             // Ergast round number
+  raceId    Int          @unique             // season * 1000 + round; legacy IDs rekeyed during sync
   season    Int
   round     Int
   name      String

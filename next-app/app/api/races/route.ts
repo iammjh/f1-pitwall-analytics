@@ -2,10 +2,14 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getRedis, cacheKey } from '@/lib/redis';
 import { f1Api } from '@/lib/f1-api';
 import { parseRoundParam, parseSeasonParam } from '@/lib/query-params';
+import { enforcePublicRateLimit, publicCacheHeaders } from '@/lib/public-api';
 
 export const dynamic = 'force-dynamic';
 
 export async function GET(req: NextRequest) {
+  const limited = enforcePublicRateLimit(req, 'races');
+  if (limited) return limited;
+
   try {
     const searchParams = req.nextUrl.searchParams;
     const seasonResult = parseSeasonParam(searchParams.get('season'));
@@ -20,15 +24,19 @@ export async function GET(req: NextRequest) {
     }
     const round = roundResult?.ok ? String(roundResult.value) : null;
 
-    const redis = await getRedis();
     const cacheKeyStr = round
       ? cacheKey.results(season, Number(round))
       : cacheKey.races(season);
-    
-    // Check cache
-    const cached = await redis.get(cacheKeyStr);
+
+    // Redis is an optional cache: when it is down, serve straight from the upstream API.
+    const redis = await getRedis().catch((error) => {
+      console.error('Redis unavailable, skipping race cache:', error);
+      return null;
+    });
+
+    const cached = redis ? await redis.get(cacheKeyStr).catch(() => null) : null;
     if (cached) {
-      return NextResponse.json(JSON.parse(cached));
+      return NextResponse.json(JSON.parse(cached), { headers: publicCacheHeaders(600) });
     }
 
     // Fetch from API
@@ -42,9 +50,11 @@ export async function GET(req: NextRequest) {
     }
 
     // Cache for 1 hour
-    await redis.setEx(cacheKeyStr, 3600, JSON.stringify(data));
+    await redis?.setEx(cacheKeyStr, 3600, JSON.stringify(data)).catch((error) => {
+      console.error('Failed to write race cache:', error);
+    });
 
-    return NextResponse.json(data);
+    return NextResponse.json(data, { headers: publicCacheHeaders(600) });
   } catch (error) {
     console.error('Race API error:', error);
     return NextResponse.json({ error: 'Failed to fetch races' }, { status: 500 });

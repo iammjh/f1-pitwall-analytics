@@ -28,10 +28,6 @@ export function getPitStopsFromMrData(data) {
   return getFirstRaceFromMrData(data)?.PitStops || [];
 }
 
-export function getCircuitsFromMrData(data) {
-  return data?.MRData?.CircuitTable?.Circuits || [];
-}
-
 export async function fetchDriverStandings(season, { limit = 100, fetcher = defaultFetchJson } = {}) {
   const data = await fetcher(`${JOLPICA_BASE_URL}/${season}/driverStandings/?format=json&limit=${limit}`);
   return getDriverStandingsFromMrData(data);
@@ -48,20 +44,26 @@ export async function fetchSeasonRaces(season, { limit = 30, fetcher = defaultFe
 }
 
 export async function fetchSeasonResults(season, { limit = 100, fetcher = defaultFetchJson } = {}) {
+  return fetchPaginatedSeasonResults(season, "results", "Results", { limit, fetcher });
+}
+
+export async function fetchSeasonSprintResults(season, { limit = 100, fetcher = defaultFetchJson } = {}) {
+  return fetchPaginatedSeasonResults(season, "sprint", "SprintResults", { limit, fetcher });
+}
+
+async function fetchPaginatedSeasonResults(season, endpoint, resultField, { limit, fetcher }) {
+  if (!Number.isInteger(limit) || limit < 1) {
+    throw new RangeError("Result page size must be a positive integer.");
+  }
+
   const pageSize = Math.min(limit, 100);
   const racesByRound = new Map();
   let offset = 0;
   let total = Number.POSITIVE_INFINITY;
-  const maxPages = Math.ceil(limit / pageSize) + 2;
-  let pagesFetched = 0;
 
   while (offset < total) {
-    if (pagesFetched >= maxPages) {
-      break;
-    }
-
     const data = await fetcher(
-      `${JOLPICA_BASE_URL}/${season}/results/?format=json&limit=${pageSize}&offset=${offset}`
+      `${JOLPICA_BASE_URL}/${season}/${endpoint}/?format=json&limit=${pageSize}&offset=${offset}`
     );
     const races = getRacesFromMrData(data);
     const reportedTotal = Number(data?.MRData?.total);
@@ -70,19 +72,36 @@ export async function fetchSeasonResults(season, { limit = 100, fetcher = defaul
       total = reportedTotal;
     }
 
+    let returnedResults = 0;
+    let addedResults = 0;
     races.forEach((race) => {
       const key = `${race?.season || season}-${race?.round}`;
-      if (!racesByRound.has(key)) {
-        racesByRound.set(key, race);
+      const existing = racesByRound.get(key);
+      // Jolpica paginates individual driver results, so one race can span pages.
+      const resultKey = (result) => result.Driver?.driverId || result.number || result.position;
+      const merged = new Map((existing?.[resultField] || []).map((result) => [resultKey(result), result]));
+      for (const result of race[resultField] || []) {
+        returnedResults += 1;
+        const driverKey = resultKey(result);
+        if (!merged.has(driverKey)) addedResults += 1;
+        merged.set(driverKey, result);
       }
+      racesByRound.set(key, { ...existing, ...race, [resultField]: [...merged.values()] });
     });
 
-    if (!races.length) {
+    if (returnedResults === 0) {
+      if (Number.isFinite(total) && offset < total) {
+        throw new Error("Jolpica returned an incomplete results page.");
+      }
       break;
     }
+    if (addedResults === 0) {
+      throw new Error("Jolpica results pagination did not advance.");
+    }
 
-    offset += pageSize;
-    pagesFetched += 1;
+    // Use the actual count in case the upstream server caps the requested size.
+    offset += returnedResults;
+    if (!Number.isFinite(total) && returnedResults < pageSize) break;
   }
 
   return [...racesByRound.values()].sort(
@@ -98,11 +117,6 @@ export async function fetchRoundResultRace(season, round, { limit = 25, fetcher 
 export async function fetchRoundPitStops(season, round, { limit = 200, fetcher = defaultFetchJson } = {}) {
   const data = await fetcher(`${JOLPICA_BASE_URL}/${season}/${round}/pitstops/?format=json&limit=${limit}`);
   return getPitStopsFromMrData(data);
-}
-
-export async function fetchSeasonCircuits(season, { limit = 30, fetcher = defaultFetchJson } = {}) {
-  const data = await fetcher(`${JOLPICA_BASE_URL}/${season}/circuits/?format=json&limit=${limit}`);
-  return getCircuitsFromMrData(data);
 }
 
 export async function fetchCircuitResults(

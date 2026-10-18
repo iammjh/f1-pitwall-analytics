@@ -1,66 +1,84 @@
-version: '3.8'
-
-# ─────────────────────────────────────────────────────────────────────────────
-# F1 Analytics Hub — Docker Compose
-#
-# IMPORTANT: Before running, create a .env file in this directory with:
-#   MONGO_ROOT_USER=<your-chosen-username>
-#   MONGO_ROOT_PASSWORD=<strong-random-password>
-#   REDIS_PASSWORD=<strong-random-password>
-#
-# Never hardcode credentials in this file.
-# ─────────────────────────────────────────────────────────────────────────────
-
+# Local development services. Copy .env.example to .env before starting.
 services:
-  # MongoDB Database
   mongodb:
     image: mongo:6.0
     restart: unless-stopped
     ports:
-      - "127.0.0.1:27017:27017"  # bind to localhost only — not exposed to internet
+      - "127.0.0.1:27017:27017"
     environment:
-      MONGO_INITDB_ROOT_USERNAME: ${MONGO_ROOT_USER}
-      MONGO_INITDB_ROOT_PASSWORD: ${MONGO_ROOT_PASSWORD}
+      MONGO_INITDB_ROOT_USERNAME: ${MONGO_ROOT_USER:?Set MONGO_ROOT_USER in root .env}
+      MONGO_INITDB_ROOT_PASSWORD: ${MONGO_ROOT_PASSWORD:?Set MONGO_ROOT_PASSWORD in root .env}
+    entrypoint: ["/bin/bash", "/opt/f1-mongo/entrypoint.sh"]
+    command: ["mongod", "--replSet", "rs0", "--bind_ip_all", "--keyFile", "/data/configdb/replica-set.key"]
     volumes:
       - mongodb_data:/data/db
+      - mongodb_config:/data/configdb
+      - ./docker/mongo:/opt/f1-mongo:ro
+    healthcheck:
+      test: ["CMD", "mongosh", "--nodb", "--quiet", "--file", "/opt/f1-mongo/healthcheck.js"]
+      interval: 5s
+      timeout: 5s
+      retries: 30
+      start_period: 20s
     networks:
       - f1-network
 
-  # Redis Cache
+  # Explicit bootstrap also upgrades existing standalone volumes to rs0.
+  # Run: docker compose run --rm mongodb-init
+  mongodb-init:
+    image: mongo:6.0
+    restart: "no"
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: ${MONGO_ROOT_USER:?Set MONGO_ROOT_USER in root .env}
+      MONGO_INITDB_ROOT_PASSWORD: ${MONGO_ROOT_PASSWORD:?Set MONGO_ROOT_PASSWORD in root .env}
+    entrypoint: ["mongosh", "--nodb", "--quiet", "--file", "/opt/f1-mongo/bootstrap.js"]
+    volumes:
+      - ./docker/mongo:/opt/f1-mongo:ro
+    depends_on:
+      mongodb:
+        condition: service_started
+    networks:
+      - f1-network
+
   redis:
     image: redis:7-alpine
     restart: unless-stopped
     ports:
-      - "127.0.0.1:6379:6379"  # bind to localhost only
+      - "127.0.0.1:6379:6379"
+    environment:
+      REDIS_PASSWORD: ${REDIS_PASSWORD:?Set REDIS_PASSWORD in root .env}
+    command: ["sh", "-c", 'exec redis-server --appendonly yes --requirepass "$$REDIS_PASSWORD"']
     volumes:
       - redis_data:/data
+    healthcheck:
+      test: ["CMD-SHELL", 'test "$$(REDISCLI_AUTH="$$REDIS_PASSWORD" redis-cli ping)" = PONG']
+      interval: 5s
+      timeout: 3s
+      retries: 10
     networks:
       - f1-network
-    command: redis-server --appendonly yes --requirepass ${REDIS_PASSWORD}
 
-  # Background support service (polling → Redis)
   backend:
     build: ./server
     restart: unless-stopped
     ports:
-      - "5000:5000"
+      - "127.0.0.1:5000:5000"
     environment:
-      - NODE_ENV=production
-      - REDIS_HOST=redis
-      - REDIS_PORT=6379
-      - REDIS_PASSWORD=${REDIS_PASSWORD}
-      - EMAIL_USER=${EMAIL_USER}
-      - EMAIL_PASSWORD=${EMAIL_PASSWORD}
-      - EMAIL_SERVICE=gmail
-      - FRONTEND_URL=${FRONTEND_URL:-http://localhost:3000}
-      - ALLOWED_ORIGINS=${ALLOWED_ORIGINS:-http://localhost:3000}
+      NODE_ENV: production
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      REDIS_PASSWORD: ${REDIS_PASSWORD:?Set REDIS_PASSWORD in root .env}
+      FRONTEND_URL: ${FRONTEND_URL:-http://localhost:3000}
+      ALLOWED_ORIGINS: ${ALLOWED_ORIGINS:-http://localhost:3000}
     depends_on:
-      - redis
+      redis:
+        condition: service_healthy
     networks:
       - f1-network
 
 volumes:
   mongodb_data:
+  mongodb_config:
   redis_data:
 
 networks:
