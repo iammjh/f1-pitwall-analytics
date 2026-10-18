@@ -1,0 +1,45 @@
+# Vercel Web Analytics Installation
+
+Successfully installed and configured Vercel Web Analytics for the F1 Pitwall Analytics project.
+
+## Changes Made
+
+### 1. Package Installation
+- Installed `@vercel/analytics@^2.0.1` package
+- Updated package.json with the new dependency
+- Updated package-lock.json with resolved dependencies
+
+### 2. Code Configuration
+**Modified: `app/layout.tsx`**
+- Added import statement: `import { Analytics } from '@vercel/analytics/next';`
+- Inserted `<Analytics />` component at the end of the body element, after the `</AuthProvider>` closing tag
+- Placement ensures Analytics tracks all routes and user interactions while maintaining existing functionality
+
+## Implementation Details
+
+Following the official Vercel Analytics quickstart documentation (https://vercel.com/docs/analytics/quickstart), I:
+1. Retrieved the latest installation instructions using WebFetch
+2. Identified this as a Next.js 14 App Router project
+3. Applied the framework-specific configuration for Next.js App Router
+4. Placed the Analytics component in the root layout to track all pages
+
+## Verification
+
+All quality checks passed successfully:
+- ✅ ESLint: No warnings or errors
+- ✅ Build: Compiled successfully (14 routes generated)
+- ✅ Tests: All 308 tests passed across 39 test files
+- ✅ Lock files: package-lock.json properly updated
+
+## Next Steps
+
+To complete the setup:
+1. Deploy the application to Vercel
+2. Enable Web Analytics in the Vercel dashboard (Project Settings → Analytics)
+3. Analytics data will be available in the dashboard after users visit the site
+
+## Notes
+
+- The Analytics component is placed outside the AuthProvider to ensure it tracks all visitors, not just authenticated users
+- The component uses the `@vercel/analytics/next` import which provides seamless Next.js integration with automatic route tracking
+- No environment variables or additional configuration required for basic functionality
