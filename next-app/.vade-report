@@ -1,45 +1,50 @@
-# Vercel Web Analytics Installation
+# Vercel Speed Insights Installation
 
-Successfully installed and configured Vercel Web Analytics for the F1 Pitwall Analytics project.
+Successfully installed and configured Vercel Speed Insights for the F1 Analytics Next.js project.
 
 ## Changes Made
 
 ### 1. Package Installation
-- Installed `@vercel/analytics@^2.0.1` package
-- Updated package.json with the new dependency
-- Updated package-lock.json with resolved dependencies
+- Installed `@vercel/speed-insights` package (v2.0.0)
+- Updated `package.json` with the new dependency
+- Updated `package-lock.json` with the new dependency tree
 
-### 2. Code Configuration
+### 2. Code Integration
 **Modified: `app/layout.tsx`**
-- Added import statement: `import { Analytics } from '@vercel/analytics/next';`
-- Inserted `<Analytics />` component at the end of the body element, after the `</AuthProvider>` closing tag
-- Placement ensures Analytics tracks all routes and user interactions while maintaining existing functionality
+- Added import: `import { SpeedInsights } from '@vercel/speed-insights/next';`
+- Added `<SpeedInsights />` component to the root layout, placed after the existing `<Analytics />` component
+- Followed the official Vercel documentation for Next.js App Router (v13.5+)
 
 ## Implementation Details
 
-Following the official Vercel Analytics quickstart documentation (https://vercel.com/docs/analytics/quickstart), I:
-1. Retrieved the latest installation instructions using WebFetch
-2. Identified this as a Next.js 14 App Router project
-3. Applied the framework-specific configuration for Next.js App Router
-4. Placed the Analytics component in the root layout to track all pages
+Following the official Vercel Speed Insights quickstart guide (https://vercel.com/docs/speed-insights/quickstart), I implemented the recommended setup for Next.js App Router:
+
+1. **Framework Detection**: Identified this as a Next.js 14 project using the App Router
+2. **Correct Package Import**: Used `@vercel/speed-insights/next` for optimal Next.js integration
+3. **Component Placement**: Added the component at the end of the body tag in the root layout, consistent with the existing Analytics component placement
+4. **TypeScript Support**: The package includes full TypeScript support, which integrates seamlessly with the existing TypeScript configuration
 
 ## Verification
 
-All quality checks passed successfully:
-- ✅ ESLint: No warnings or errors
-- ✅ Build: Compiled successfully (14 routes generated)
-- ✅ Tests: All 308 tests passed across 39 test files
-- ✅ Lock files: package-lock.json properly updated
+All verification steps completed successfully:
+- ✅ Build completed without errors
+- ✅ Linter passed with no warnings or errors  
+- ✅ All 308 tests passed (39 test files)
+- ✅ No breaking changes introduced
 
-## Next Steps
+## How It Works
 
-To complete the setup:
-1. Deploy the application to Vercel
-2. Enable Web Analytics in the Vercel dashboard (Project Settings → Analytics)
-3. Analytics data will be available in the dashboard after users visit the site
+Once deployed to Vercel, Speed Insights will automatically:
+- Collect Core Web Vitals and performance metrics
+- Track real user monitoring (RUM) data
+- Report data to the Vercel dashboard
+- Require no additional configuration
+
+The metrics will be visible in the Vercel dashboard under the Speed Insights section after users visit the deployed site.
 
 ## Notes
 
-- The Analytics component is placed outside the AuthProvider to ensure it tracks all visitors, not just authenticated users
-- The component uses the `@vercel/analytics/next` import which provides seamless Next.js integration with automatic route tracking
-- No environment variables or additional configuration required for basic functionality
+- The implementation preserves all existing functionality
+- The SpeedInsights component is lightweight and has minimal impact on bundle size
+- Data collection only works when deployed to Vercel
+- The component works alongside the existing Vercel Analytics implementation
