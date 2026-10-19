@@ -29,6 +29,8 @@ import {
   Newspaper,
   ExternalLink
 } from 'lucide-react';
+// The loading screen never stays longer than this, even if the sign-in check is slow.
+const LOADER_MAX_MS = 700;
 const CURRENT_SEASON = new Date().getFullYear();
 const SEASON_CANDIDATES = [CURRENT_SEASON, CURRENT_SEASON - 1, CURRENT_SEASON - 2].map(String);
 
@@ -123,6 +125,16 @@ export default function HomeDashboard() {
 
   useEffect(() => { setMounted(true); }, []);
 
+  // The loading screen goes as soon as the sign-in check is done, or after LOADER_MAX_MS at most.
+  const [loaderDone, setLoaderDone] = useState(false);
+  useEffect(() => {
+    const timer = window.setTimeout(() => setLoaderDone(true), LOADER_MAX_MS);
+    return () => window.clearTimeout(timer);
+  }, []);
+  useEffect(() => {
+    if (mounted && status !== 'loading') setLoaderDone(true);
+  }, [mounted, status]);
+
   useEffect(() => {
     if (!mounted) return;
 
@@ -207,40 +219,37 @@ export default function HomeDashboard() {
     return () => window.removeEventListener('scroll', onScroll);
   }, [mounted]);
 
-  if (!mounted || status === 'loading') {
-    // Shown only while the sign-in check runs. The intro text is visually hidden: it stays in the HTML that
-    // search engines receive, but visitors see only the logo and the loading dots.
-    return (
-      <main className="flex items-center justify-center min-h-screen bg-f1-black text-white px-5">
-        <div className="text-center space-y-6">
-          <Image src="/F1-Logo.png" alt="Formula 1 logo" width={96} height={24} className="w-24 h-auto mx-auto" style={{objectFit:"contain"}}/>
-          <p className="text-white font-black text-xl sm:text-2xl tracking-tight font-f1-display">Pitwall Analytics</p>
-          <div className="flex gap-1 justify-center" aria-hidden="true">
-            {[0,1,2].map(i => (
-              <div key={i} className="w-2 h-2 bg-f1-red rounded-full animate-bounce" style={{ animationDelay: `${i * 0.15}s` }} />
-            ))}
-          </div>
-        </div>
-        <div className="sr-only">
-          <h1>Pitwall Analytics: F1 Telemetry, Standings and Race Strategy</h1>
-          <p>
-            A Formula 1 analytics hub for championship standings, driver and constructor profiles, head-to-head comparisons,
-            race results, lap-by-lap race stories, race replays and pit-stop strategy. Race stories and replays cover seasons
-            from 1996; OpenF1 car telemetry covers 2023 onward.
-          </p>
-          <ul>
-            <li>Championship standings: driver and constructor points, gaps and wins, season by season.</li>
-            <li>Race story and replay: position charts, gap between two drivers, and a race replay with a live order.</li>
-            <li>Head to head: compare any two drivers across the season and race by race.</li>
-            <li>Pit Lab and strategy: stint maps for every driver, and what-if pit stops with a tyre-wear model.</li>
-          </ul>
-        </div>
-      </main>
-    );
-  }
-
   return (
     <div className="min-h-screen bg-f1-black overflow-x-hidden">
+      {/* Loading screen, shown briefly over the page while the sign-in check runs. The page is already there underneath. */}
+      {!loaderDone && (
+        <div role="status" aria-label="Loading Pitwall Analytics" className="fixed inset-0 z-[60] flex items-center justify-center bg-f1-black text-white px-5">
+          <div className="text-center space-y-6">
+            <Image src="/F1-Logo.png" alt="Formula 1 logo" width={96} height={24} className="w-24 h-auto mx-auto" style={{objectFit:"contain"}}/>
+            <p className="text-white font-black text-xl sm:text-2xl tracking-tight font-f1-display">Pitwall Analytics</p>
+            <div className="flex gap-1 justify-center" aria-hidden="true">
+              {[0,1,2].map(i => (
+                <div key={i} className="w-2 h-2 bg-f1-red rounded-full animate-bounce" style={{ animationDelay: `${i * 0.15}s` }} />
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
+      {/* Crawler-visible summary. Visitors don't see it: the page below is the visible content. */}
+      <div className="sr-only">
+        <h2>Pitwall Analytics: F1 Telemetry, Standings and Race Strategy</h2>
+        <p>
+          A Formula 1 analytics hub for championship standings, driver and constructor profiles, head-to-head comparisons,
+          race results, lap-by-lap race stories, race replays and pit-stop strategy. Race stories and replays cover seasons
+          from 1996; OpenF1 car telemetry covers 2023 onward.
+        </p>
+        <ul>
+          <li>Championship standings: driver and constructor points, gaps and wins, season by season.</li>
+          <li>Race story and replay: position charts, gap between two drivers, and a race replay with a live order.</li>
+          <li>Head to head: compare any two drivers across the season and race by race.</li>
+          <li>Pit Lab and strategy: stint maps for every driver, and what-if pit stops with a tyre-wear model.</li>
+        </ul>
+      </div>
 
       {/* ── Fixed Nav ──────────────────────────────────────────── */}
       <nav className="fixed top-0 left-0 right-0 z-50 bg-f1-black/85 backdrop-blur-md border-b border-f1-grid">
@@ -253,7 +262,7 @@ export default function HomeDashboard() {
             </span>
           </div>
           <div className="flex items-center gap-3">
-            {status === 'authenticated' ? (
+            {status === 'loading' ? null : status === 'authenticated' ? (
               <div className="relative group">
                 <button className="px-3 sm:px-4 py-2 bg-f1-red hover:bg-red-700 text-white font-semibold rounded-lg transition text-xs sm:text-sm inline-flex items-center gap-2 max-w-[170px] sm:max-w-[240px] border border-red-500/40">
                   <span className="inline-flex h-6 w-6 items-center justify-center rounded bg-white text-[12px] font-extrabold text-f1-red">
@@ -305,7 +314,7 @@ export default function HomeDashboard() {
         {/* Background image — JS parallax, no iOS issues */}
         <div className="hero-bg-img absolute inset-0 will-change-transform" style={{ top: '-15%', bottom: '-15%' }}>
           <Image
-            src="/hero-f1-car.jpg"
+            src="/hero-f1-car.webp"
             alt="F1 race car"
             fill
             priority

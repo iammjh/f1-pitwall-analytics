@@ -1,4 +1,5 @@
 import type { Metadata, Viewport } from 'next';
+import { Orbitron, Titillium_Web } from 'next/font/google';
 import './globals.css';
 import { AuthProvider } from './providers';
 import { getGoogleSiteVerification } from '@/lib/google-site-verification';
@@ -9,6 +10,10 @@ import { Analytics } from '@vercel/analytics/next';
 import { SpeedInsights } from '@vercel/speed-insights/next';
 
 const googleSiteVerification = getGoogleSiteVerification();
+
+// Self-hosted by Next at build time, so the browser doesn't wait on a third-party stylesheet.
+const orbitron = Orbitron({ subsets: ['latin'], weight: ['400', '500', '600', '700', '800', '900'], variable: '--font-orbitron', display: 'swap' });
+const titillium = Titillium_Web({ subsets: ['latin'], weight: ['300', '400', '600', '700', '900'], variable: '--font-titillium', display: 'swap' });
 
 export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),
@@ -88,10 +93,8 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="en">
+    <html lang="en" className={`${orbitron.variable} ${titillium.variable}`}>
       <head>
-        <link rel="preconnect" href="https://fonts.googleapis.com" />
-        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
         <link rel="icon" type="image/png" href="/favicon-32x32.png" sizes="32x32" />
       </head>
       <body className="bg-f1-black text-white">

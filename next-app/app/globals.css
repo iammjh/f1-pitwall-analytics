@@ -1,5 +1,3 @@
-@import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;600;700;800;900&family=Titillium+Web:wght@300;400;600;700;900&display=swap');
-
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -13,7 +11,7 @@
 @layer base {
   body {
     @apply bg-f1-black text-white antialiased;
-    font-family: 'Titillium Web', 'SF Pro Display', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    font-family: var(--font-titillium), 'Titillium Web', 'SF Pro Display', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
   }
 
   /* Smooth scroll for anchor links */
@@ -74,10 +72,10 @@
 
   /* Font styling utilities */
   .font-f1-display {
-    font-family: 'Orbitron', sans-serif;
+    font-family: var(--font-orbitron), 'Orbitron', sans-serif;
   }
   .font-f1-body {
-    font-family: 'Titillium Web', sans-serif;
+    font-family: var(--font-titillium), 'Titillium Web', sans-serif;
   }
 }
 
