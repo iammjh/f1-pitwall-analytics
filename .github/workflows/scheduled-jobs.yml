@@ -23,6 +23,8 @@ jobs:
           APP_URL: ${{ vars.APP_URL }}
           CRON_SECRET: ${{ secrets.CRON_SECRET }}
         run: |
+          test -n "${APP_URL}" || { echo "::error::Repository variable APP_URL is not set"; exit 1; }
+          test -n "${CRON_SECRET}" || { echo "::error::Repository secret CRON_SECRET is not set"; exit 1; }
           curl --fail --silent --show-error --max-time 120 \
             -H "Authorization: Bearer ${CRON_SECRET}" \
             "${APP_URL}/api/auth/password-reset/deliver"
@@ -36,6 +38,8 @@ jobs:
           APP_URL: ${{ vars.APP_URL }}
           CRON_SECRET: ${{ secrets.CRON_SECRET }}
         run: |
+          test -n "${APP_URL}" || { echo "::error::Repository variable APP_URL is not set"; exit 1; }
+          test -n "${CRON_SECRET}" || { echo "::error::Repository secret CRON_SECRET is not set"; exit 1; }
           curl --fail --silent --show-error --max-time 120 \
             -H "Authorization: Bearer ${CRON_SECRET}" \
             "${APP_URL}/api/notifications/race-alerts"
