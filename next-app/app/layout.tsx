@@ -5,6 +5,7 @@ import { getGoogleSiteVerification } from '@/lib/google-site-verification';
 import ScrollToTop from '@/components/ScrollToTop';
 import PwaRegister from '@/components/PwaRegister';
 import { SITE_URL } from '@/lib/site-config';
+import { Analytics } from '@vercel/analytics/next';
 
 const googleSiteVerification = getGoogleSiteVerification();
 
@@ -98,6 +99,7 @@ export default function RootLayout({
           <ScrollToTop />
           <PwaRegister />
         </AuthProvider>
+        <Analytics />
       </body>
     </html>
   );
